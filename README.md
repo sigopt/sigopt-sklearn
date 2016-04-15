@@ -1,12 +1,12 @@
-# SigOpt and scikit-learn interfaces
-This package implements useful interfaces and wrappers for using SigOpt and  scikit-learn(http://scikit-learn.org/stable/) together
+# SigOpt and scikit-learn Interfacing
+This package implements useful interfaces and wrappers for using SigOpt and [scikit-learn](http://scikit-learn.org/stable/) together
 
 ## Getting Started
 
 Install the sigopt_sklearn python modules with `pip install sigopt_sklearn`.
 
 Sign up for an account at [https://sigopt.com](https://sigopt.com).
-In order to use the API, you'll need your API token from your [user profile](https://sigopt.com/user/profile).i
+In order to use the API, you'll need your API token from your [user profile](https://sigopt.com/user/profile).
 
 ### SigOptSearchCV
 
@@ -33,7 +33,8 @@ svr = svm.SVC()
 clf = SigOptSearchCV(svr, svc_parameters, cv=5, 
 	client_token=client_token, n_jobs=5, n_iter=20)
 
-# perform CV search for best parameters and fits all 
+# perform CV search for best parameters and fits estimator
+# on all data using best found configuration
 clf.fit(iris.data, iris.target)
 
 # clf.predict() now uses best found estimator 
