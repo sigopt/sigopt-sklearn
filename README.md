@@ -1,5 +1,5 @@
 # SigOpt + scikit-learn Interfacing
-This package implements useful interfaces and wrappers for using SigOpt and [scikit-learn](http://scikit-learn.org/stable/) together
+This package implements useful interfaces and wrappers for using [SigOpt](https://sigopt.com) and [scikit-learn](http://scikit-learn.org/stable/) together
 
 ## Getting Started
 
