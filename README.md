@@ -1,4 +1,4 @@
-# SigOpt and scikit-learn Interfacing
+# SigOpt + scikit-learn Interfacing
 This package implements useful interfaces and wrappers for using SigOpt and [scikit-learn](http://scikit-learn.org/stable/) together
 
 ## Getting Started
@@ -6,7 +6,7 @@ This package implements useful interfaces and wrappers for using SigOpt and [sci
 Install the sigopt_sklearn python modules with `pip install sigopt_sklearn`.
 
 Sign up for an account at [https://sigopt.com](https://sigopt.com).
-In order to use the API, you'll need your API token from your [user profile](https://sigopt.com/user/profile).
+In order to use the interfaces, you'll need your API token from your [user profile](https://sigopt.com/user/profile).
 
 ### SigOptSearchCV
 
