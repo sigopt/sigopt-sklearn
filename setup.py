@@ -5,7 +5,8 @@ from sigopt_sklearn.version import VERSION
 install_requires=[
    'sigopt',
    'numpy',
-   'sklearn']
+   'sklearn',
+   'joblib']
 
 setup(
   name='sigopt_sklearn',
