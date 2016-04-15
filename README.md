@@ -16,7 +16,7 @@ parameters of an SVM on a small dataset is provided below
 
 ```python
 from sklearn import svm, datasets
-from sigopt_sklearn import SigOptSearchCV
+from sigopt_sklearn.search import SigOptSearchCV
 
 # find your SigOpt client token here : https://sigopt.com/user/profile
 client_token = "<YOUR_SIGOPT_CLIENT_TOKEN>"
