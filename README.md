@@ -41,3 +41,36 @@ clf.fit(iris.data, iris.target)
 # clf.best_score_ contains CV score for best found estimator
 # clf.best_params_ contains best found param configuration
 ```
+
+### XGBoostClassifier
+
+SigOptSearchCV also works with XGBoost's XGBClassifier wrapper.  A
+hyperparameter search over XGBClassifier models can be done using the same interface
+
+```
+import xgboost as xgb
+from xgboost.sklearn import XGBClassifier
+from sklearn import datasets
+from sigopt_sklearn.search import SigOptSearchCV
+
+# find your SigOpt client token here : https://sigopt.com/user/profile
+client_token = "<YOUR_SIGOPT_CLIENT_TOKEN>"
+iris = datasets.load_iris()
+
+xgb_params = {
+ 'learning_rate' : [0.01, 0.5],
+ 'n_estimators' :  [10, 50],
+ 'max_depth':[3, 10],
+ 'min_child_weight':[6, 12],
+ 'gamma':[0, 0.5],
+ 'subsample':[0.6, 1.0],
+ 'colsample_bytree':[0.6, 1.0]
+}
+
+xgbc = XGBClassifier()
+
+clf = SigOptSearchCV(xgbc, xgb_params, cv=5,
+    client_token=client_token, n_jobs=5, n_iter=70, verbose=1)
+
+clf.fit(iris.data, iris.target)
+```
