@@ -47,7 +47,7 @@ clf.fit(iris.data, iris.target)
 SigOptSearchCV also works with XGBoost's XGBClassifier wrapper.  A
 hyperparameter search over XGBClassifier models can be done using the same interface
 
-```
+```python
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
 from sklearn import datasets
