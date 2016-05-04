@@ -80,7 +80,7 @@ clf.fit(iris.data, iris.target)
 SigOptSearchCV performs evaluations on cv folds in parallel using
 joblib.  Timeouts are now supported in the master branch of joblib and
 SigOpt can use this timeout information to learn to avoid hyperparameter 
-configurations that are too slow.  An example is shown below
+configurations that are too slow. 
 
 You'll need to install joblib from source for this example to work.
 ```
