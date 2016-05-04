@@ -2,12 +2,14 @@ import datetime
 import numpy
 import sigopt.interface
 from joblib import Parallel, delayed
+from joblib.func_inspect import getfullargspec
 from sklearn.grid_search import BaseSearchCV
 from sklearn.cross_validation import check_cv
 from sklearn.cross_validation import _fit_and_score
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
 from sklearn.base import BaseEstimator, is_classifier, clone
+from multiprocessing import TimeoutError
 
 
 class SigOptSearchCV(BaseSearchCV):
@@ -228,23 +230,38 @@ class SigOptSearchCV(BaseSearchCV):
 
             # do CV folds in parallel using joblib
             # returns scores on test set
-            out = Parallel(
-                n_jobs=self.n_jobs, verbose=self.verbose,
-                pre_dispatch=pre_dispatch
-            )(
-                delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
+            obs_timed_out = False
+            try:
+                par_kwargs = {"n_jobs":self.n_jobs, "verbose":self.verbose,
+                              "pre_dispatch":pre_dispatch}
+                # add timeout kwarg if version of joblib supports it
+                if 'timeout' in getfullargspec(Parallel.__init__).args:
+                    par_kwargs['timeout'] = self.timeout
+                out = Parallel(
+                    **par_kwargs
+                )(
+                    delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
                                         train, test, self.verbose, non_unicode_parameters,
                                         self.fit_params, return_parameters=True,
                                         error_score=self.error_score)
-                    for train, test in cv)
+                        for train, test in cv)
+            except TimeoutError:
+                 obs_timed_out = True
 
-            # grab scores from results
-            scores = [o[0] for o in out]
-            self.conn.experiments(self.experiment.id).observations().create(
-                suggestion=suggestion.id,
-                value=numpy.mean(scores),
-                value_stddev=numpy.std(scores)
-            )
+            if not obs_timed_out:
+                # grab scores from results
+                scores = [o[0] for o in out]
+                self.conn.experiments(self.experiment.id).observations().create(
+                    suggestion=suggestion.id,
+                    value=numpy.mean(scores),
+                    value_stddev=numpy.std(scores)
+                )
+            else:
+                # obsevation timed out so report a failure
+                self.conn.experiments(self.experiment.id).observations().create(
+                    suggestion=suggestion.id,
+                    failed=True,
+                )
               
         # return best SigOpt observation so far
         best_obs = self.conn.experiments(self.experiment.id).fetch().progress.best_observation
