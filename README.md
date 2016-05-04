@@ -74,3 +74,40 @@ clf = SigOptSearchCV(xgbc, xgb_params, cv=5,
 
 clf.fit(iris.data, iris.target)
 ```
+
+### CV Fold Timeouts
+
+SigOptSearchCV performs evaluations on cv folds in parallel using
+joblib.  Timeouts are now supported in the master branch of joblib and
+SigOpt can use this timeout information to learn to avoid hyperparameter 
+configurations that are too slow.  An example is shown below
+
+You'll need to install joblib from source for this example to work.
+`pip uninstall joblib`
+`git clone https://github.com/joblib/joblib.git`
+`cd joblib; pip setup.py install`
+Installation flow also explained on the [joblib github page](https://github.com/joblib/joblib#installing)
+
+
+```python
+from sklearn import svm, datasets
+from sigopt_sklearn.search import SigOptSearchCV
+
+# find your SigOpt client token here : https://sigopt.com/user/profile
+client_token = "<YOUR_SIGOPT_CLIENT_TOKEN>"
+dataset = datasets.fetch_20newsgroups_vectorized()
+X = dataset.data
+y = dataset.target
+
+# define parameter domains
+svc_parameters  = {'kernel': ['linear', 'rbf'], 'C': [0.5, 100], 
+                   'max_iter': [10, 200], 'tol': [1e-2,1e-6]}
+svr = svm.SVC()
+
+# SVM fitting can be quite slow, so we timeout = max 180 seconds 
+# for each fit.  SigOpt will then avoid these slower configurations
+clf = SigOptSearchCV(svr, svc_parameters, cv=5, timeout=180,
+	client_token=client_token, n_jobs=5, n_iter=40)
+
+clf.fit(X, y)
+```
