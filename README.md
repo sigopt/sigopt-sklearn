@@ -83,9 +83,11 @@ SigOpt can use this timeout information to learn to avoid hyperparameter
 configurations that are too slow.  An example is shown below
 
 You'll need to install joblib from source for this example to work.
-`pip uninstall joblib`
-`git clone https://github.com/joblib/joblib.git`
-`cd joblib; pip setup.py install`
+```
+pip uninstall joblib
+git clone https://github.com/joblib/joblib.git`
+cd joblib; pip setup.py install
+```
 Installation flow also explained on the [joblib github page](https://github.com/joblib/joblib#installing)
 
 
@@ -104,7 +106,7 @@ svc_parameters  = {'kernel': ['linear', 'rbf'], 'C': [0.5, 100],
                    'max_iter': [10, 200], 'tol': [1e-2,1e-6]}
 svr = svm.SVC()
 
-# SVM fitting can be quite slow, so we timeout = max 180 seconds 
+# SVM fitting can be quite slow, so we set timeout = 180 seconds 
 # for each fit.  SigOpt will then avoid these slower configurations
 clf = SigOptSearchCV(svr, svc_parameters, cv=5, timeout=180,
 	client_token=client_token, n_jobs=5, n_iter=40)
