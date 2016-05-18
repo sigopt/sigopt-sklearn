@@ -86,7 +86,7 @@ You'll need to install joblib from source for this example to work.
 ```
 pip uninstall joblib
 git clone https://github.com/joblib/joblib.git`
-cd joblib; pip setup.py install
+cd joblib; python setup.py install
 ```
 Installation flow also explained on the [joblib github page](https://github.com/joblib/joblib#installing)
 
