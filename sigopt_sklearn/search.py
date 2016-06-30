@@ -136,7 +136,9 @@ class SigOptSearchCV(BaseSearchCV):
         self.conn = sigopt.interface.Connection(client_token=self.client_token)
         est_name = self.estimator.__class__.__name__
         exp_name = est_name+" (sklearn) "+datetime.datetime.now().strftime("%Y_%m_%d_%I%M_%S")
-        
+        if len(exp_name) > 50:
+            exp_name = est_name
+
         if self.verbose > 0:
             print "Creating SigOpt experiment : ",exp_name
 
