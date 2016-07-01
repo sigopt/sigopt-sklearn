@@ -1,4 +1,5 @@
 import datetime
+import math
 import numpy
 import sigopt.interface
 from joblib import Parallel, delayed
@@ -196,6 +197,16 @@ class SigOptSearchCV(BaseSearchCV):
             non_unicode_dict[str(pname)] = pval
         return non_unicode_dict
 
+    def _convert_log_params(self, param_dict):
+      # searches through names for params and converts params with __log__ names
+      log_converted_dict = {}
+      for pname in param_dict:
+        pval = param_dict[pname]
+        if "__log__" in pname:
+          pval = math.exp(pval)
+          pname = pname.replace("__log__","")
+        log_converted_dict[pname] = pval
+      return log_converted_dict
 
     def _fit(self, X, y):
 
@@ -227,8 +238,11 @@ class SigOptSearchCV(BaseSearchCV):
             # convert all unicode names and values to plain strings
             non_unicode_parameters = self._convert_unicode_dict(parameters)
 
+            # automatically convert __log__ params
+            non_unicode_parameters = self._convert_log_params(non_unicode_parameters)
+
             if self.verbose > 0:
-                print "Evaluating params : ",non_unicode_parameters
+                print "Evaluating params : ", non_unicode_parameters
 
             # do CV folds in parallel using joblib
             # returns scores on test set
@@ -270,6 +284,7 @@ class SigOptSearchCV(BaseSearchCV):
         self.best_params_ = best_obs.assignments.to_json()
          # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode_dict(self.best_params_)
+        self.best_params_ = self._convert_log_params(self.best_params_)
         self.best_score_ = best_obs.value
 
         if self.refit:
