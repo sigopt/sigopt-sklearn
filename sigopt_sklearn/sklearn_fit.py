@@ -115,7 +115,8 @@ def main():
     'min_child_weight': [6, 12],
     'gamma': [0, 0.5],
     'subsample': [0.6, 1.0],
-    'colsample_bytree': [0.6, 1.0]
+    'colsample_bytree': [0.6, 1.0],
+    'objective': ['binary:logistic','multi:softprob']
   }
 
   lda_params = { "__log__tol": [math.log(0.00001), math.log(0.5)] }

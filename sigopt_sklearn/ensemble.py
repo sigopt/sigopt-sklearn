@@ -85,6 +85,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
 
   def predict_proba(self, X):
     # validate X
+    # TODO : dim wrong when using 1d array
     res_proba = np.zeros((X.shape[0], len(self.classes_)))
     for idx, est in enumerate(self.estimator_ensemble):
       w = self.estimator_bayes_avg_coefs[idx]
