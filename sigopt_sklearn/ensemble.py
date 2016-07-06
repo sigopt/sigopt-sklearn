@@ -51,7 +51,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
           cv_timeout=None, n_iter=25, n_jobs=1, n_cv_jobs=5):
     self.n_outputs_ = 1
     self.classes_ = np.unique(check_array(y, ensure_2d=False,
-                                              allow_nd=True))
+                                          allow_nd=True, dtype=None))
     #Store X and y data for workers to use
     with open(self.X_file.name, 'wb') as outfile:
       pickle.dump(X, outfile, pickle.HIGHEST_PROTOCOL)
