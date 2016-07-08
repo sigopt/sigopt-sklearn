@@ -139,16 +139,22 @@ def main():
 
   # check that estimator can handle sparse matrices
   if scipy.sparse.issparse(X) and not est_handle_sparse:
-    est = DummyClassifier()
+    clf = DummyClassifier()
     est_params = None
+  elif est_params is not None:
+    # fit the estimator if it has params to tune
+    n_iter = max(10 * len(est_params), 20)
+    clf = SigOptSearchCV(
+      est,
+      est_params,
+      cv=3,
+      client_token=client_token,
+      n_jobs=3,
+      n_iter=n_iter,
+    )
+  else:
+    clf = est
 
-  # fit the estimator if it has params to tune
-  clf = est
-  if est_params is not None:
-    n_iter = max(10*len(est_params), 20)
-    clf = SigOptSearchCV(est, est_params, cv=3,
-             client_token=client_token, n_jobs=3, n_iter=n_iter)
-  
   clf.fit(X, y)
   if hasattr(clf, 'best_estimator_'):
     clf = clf.best_estimator_
