@@ -308,6 +308,7 @@ class SigOptSearchCV(BaseSearchCV):
             else:
                 best_estimator.fit(X, **self.fit_params)
             self.best_estimator_ = best_estimator
+        return self
 
     def fit(self, X, y=None):
         """
