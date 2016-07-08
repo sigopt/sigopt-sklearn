@@ -17,23 +17,24 @@ class SigOptEnsembleClassifier(ClassifierMixin):
     self.estimator_ensemble = []
     self.estimator_bayes_avg_coefs = []
     self.estimator_build_args = []
-    # create build args for all models in ensemble
-    self.construct_ensemble_build_args()
 
     self.n_outputs_ = None
     self.classes_ = None
 
-  def construct_ensemble_build_args(self):
+    # create build args for all models in ensemble
+    self._construct_ensemble_build_args()
+
+  def _construct_ensemble_build_args(self):
     # Generate names for input and output files
     self.X_file = NamedTemporaryFile()
     self.y_file = NamedTemporaryFile()
     for est_name in ESTIMATOR_NAMES:
        results_file = NamedTemporaryFile()
        arg_dict = {'X_file': self.X_file.name, 'y_file': self.y_file.name,
-                   'output_file':results_file.name, 'estimator':est_name}
+                   'output_file': results_file.name, 'estimator': est_name}
        self.estimator_build_args.append(arg_dict)
 
-  def find_bayes_avg_coefs(self, X, y):
+  def _find_bayes_avg_coefs(self, X, y):
     log_likelihoods = []
     eps = 1e-4
     for est in self.estimator_ensemble:
@@ -50,8 +51,8 @@ class SigOptEnsembleClassifier(ClassifierMixin):
   def fit(self, X, y, client_token=None, est_timeout=None):
     self.n_outputs_ = 1
     self.classes_ = np.array(np.unique(check_array(y, ensure_2d=False,
-                                          allow_nd=True, dtype=None)))
-    #Store X and y data for workers to use
+                                                   allow_nd=True, dtype=None)))
+    # Store X and y data for workers to use
     with open(self.X_file.name, 'wb') as outfile:
       pickle.dump(X, outfile, pickle.HIGHEST_PROTOCOL)
     with open(self.y_file.name, 'wb') as outfile:
@@ -66,7 +67,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
            "--client_token", client_token,
            "--output_file", build_args['output_file']])
       sigopt_procs.append(p)
-    exit_codes = [p.wait() for p in sigopt_procs]
+    exit_codes = [p.wait() for _ in sigopt_procs]
     return_codes_args = zip(exit_codes, self.estimator_build_args)
 
     # remove estimators that errored or timed out
@@ -80,7 +81,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
         self.estimator_ensemble.append(clf)
 
     # find weights for ensemble
-    self.estimator_bayes_avg_coefs = self.find_bayes_avg_coefs(X, y)
+    self.estimator_bayes_avg_coefs = self._find_bayes_avg_coefs(X, y)
 
   def predict_proba(self, X):
     # validate X
