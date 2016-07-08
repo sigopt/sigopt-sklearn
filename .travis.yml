@@ -13,6 +13,8 @@ cache:
 addons:
   apt:
     packages:
+      - 'gcc'
+      - 'gfortran'
       - 'libatlas-base-dev'
       - 'libblas-dev'
       - 'libc6'
