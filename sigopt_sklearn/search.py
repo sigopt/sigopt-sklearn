@@ -127,7 +127,7 @@ class SigOptSearchCV(BaseSearchCV):
         self.param_domains = param_domains
         self.n_iter = n_iter
         if not client_token:
-            raise Exception("Please find your client token here : https://sigopt.com/user/profile")
+            raise ValueError("Please find your client token here : https://sigopt.com/user/profile")
         self.client_token = client_token
         self.timeout = timeout
         self.verbose = verbose

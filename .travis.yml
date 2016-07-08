@@ -21,9 +21,10 @@ addons:
       - 'libffi-dev'
       - 'liblapack-dev'
 install:
-  - pip install pylint==1.4.1
+  - pip install pytest pylint==1.4.1
   - pip install -r requirements.txt
   - python setup.py clean --all
   - python setup.py install
 script:
+  - PYTHONPATH=. python -m pytest -rw -v test
   - ./lint
