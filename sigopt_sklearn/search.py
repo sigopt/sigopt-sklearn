@@ -195,16 +195,6 @@ class SigOptSearchCV(BaseSearchCV):
             exp_url = "https://sigopt.com/experiment/{0}".format(self.experiment.id)
             print("Experiment progress available at :", exp_url)
 
-    def _convert_unicode_dict(self, unicode_dict):
-        # convert all unicode names and values to plain strings
-        non_unicode_dict = {}
-        for pname in unicode_dict:
-            pval = unicode_dict[pname]
-            if isinstance(pval, unicode):
-                pval = str(pval)
-            non_unicode_dict[str(pname)] = pval
-        return non_unicode_dict
-
     def _convert_log_params(self, param_dict):
       # searches through names for params and converts params with __log__ names
       log_converted_dict = {}
@@ -242,18 +232,15 @@ class SigOptSearchCV(BaseSearchCV):
         # setup SigOpt experiment and run optimization
         conn = sigopt.Connection(client_token=self.client_token)
         self._create_sigopt_exp(conn)
-        for _ in xrange(self.n_iter):
+        for _ in range(self.n_iter):
             suggestion = conn.experiments(self.experiment.id).suggestions().create()
             parameters = suggestion.assignments.to_json()
 
-            # convert all unicode names and values to plain strings
-            non_unicode_parameters = self._convert_unicode_dict(parameters)
-
             # automatically convert __log__ params
-            non_unicode_parameters = self._convert_log_params(non_unicode_parameters)
+            parameters = self._convert_log_params(parameters)
 
             if self.verbose > 0:
-                print("Evaluating params : ", non_unicode_parameters)
+                print("Evaluating params : ", parameters)
 
             # do CV folds in parallel using joblib
             # returns scores on test set
@@ -268,7 +255,7 @@ class SigOptSearchCV(BaseSearchCV):
                     **par_kwargs
                 )(
                     delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
-                                            train, test, self.verbose, non_unicode_parameters,
+                                            train, test, self.verbose, parameters,
                                             self.fit_params, return_parameters=True,
                                             error_score=self.error_score)
                         for train, test in cv)
