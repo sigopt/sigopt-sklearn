@@ -1,17 +1,21 @@
+from __future__ import absolute_import, print_function
+
 import argparse
 import math
 import cPickle as pickle
+
 import scipy.sparse
-from .search import SigOptSearchCV
+from xgboost.sklearn import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import SGDClassifier
-from xgboost.sklearn import XGBClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.dummy import DummyClassifier
+
+from sigopt_sklearn.search import SigOptSearchCV
 
 
 ESTIMATOR_NAMES = [
@@ -164,4 +168,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-

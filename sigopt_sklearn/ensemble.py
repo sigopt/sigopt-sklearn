@@ -1,3 +1,5 @@
+from __future__ import absolute_import, print_function
+
 import cPickle as pickle
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
@@ -47,8 +49,8 @@ class SigOptEnsembleClassifier(ClassifierMixin):
 
   def fit(self, X, y, client_token=None, est_timeout=None):
     self.n_outputs_ = 1
-    self.classes_ = np.unique(check_array(y, ensure_2d=False,
-                                          allow_nd=True, dtype=None))
+    self.classes_ = np.array(np.unique(check_array(y, ensure_2d=False,
+                                          allow_nd=True, dtype=None)))
     #Store X and y data for workers to use
     with open(self.X_file.name, 'wb') as outfile:
       pickle.dump(X, outfile, pickle.HIGHEST_PROTOCOL)
@@ -102,4 +104,3 @@ class SigOptEnsembleClassifier(ClassifierMixin):
                                                             axis=1),
                                                   axis=0)
       return predictions
-

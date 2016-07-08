@@ -1,3 +1,5 @@
+from __future__ import absolute_import, print_function
+
 import datetime
 import math
 from multiprocessing import TimeoutError
@@ -125,7 +127,7 @@ class SigOptSearchCV(BaseSearchCV):
         self.param_domains = param_domains
         self.n_iter = n_iter
         if not client_token:
-            print "Please find your client token here : https://sigopt.com/user/profile"
+            raise Exception("Please find your client token here : https://sigopt.com/user/profile")
         self.client_token = client_token
         self.timeout = timeout
         self.verbose = verbose
@@ -148,7 +150,7 @@ class SigOptSearchCV(BaseSearchCV):
             exp_name = est_name
 
         if self.verbose > 0:
-            print "Creating SigOpt experiment : ",exp_name
+            print("Creating SigOpt experiment: ", exp_name)
 
         # generate sigopt experiment parameters
         parameters = []
@@ -192,7 +194,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         if self.verbose > 0:
             exp_url = "https://sigopt.com/experiment/{0}".format(self.experiment.id)
-            print "Experiment progress available at : ",exp_url
+            print("Experiment progress available at :", exp_url)
 
     def _convert_unicode_dict(self, unicode_dict):
         # convert all unicode names and values to plain strings
@@ -252,7 +254,7 @@ class SigOptSearchCV(BaseSearchCV):
             non_unicode_parameters = self._convert_log_params(non_unicode_parameters)
 
             if self.verbose > 0:
-                print "Evaluating params : ", non_unicode_parameters
+                print("Evaluating params : ", non_unicode_parameters)
 
             # do CV folds in parallel using joblib
             # returns scores on test set
@@ -320,4 +322,3 @@ class SigOptSearchCV(BaseSearchCV):
             None for unsupervised learning.
         """
         return self._fit(X, y)
-
