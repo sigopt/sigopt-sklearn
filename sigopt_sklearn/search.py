@@ -1,6 +1,5 @@
 from __future__ import absolute_import, print_function
 
-import datetime
 import math
 from multiprocessing import TimeoutError
 
@@ -145,7 +144,7 @@ class SigOptSearchCV(BaseSearchCV):
 
     def _create_sigopt_exp(self, conn):
         est_name = self.estimator.__class__.__name__
-        exp_name = est_name+" (sklearn) "+datetime.datetime.now().strftime("%Y_%m_%d_%I%M_%S")
+        exp_name = est_name + " (sklearn)"
         if len(exp_name) > 50:
             exp_name = est_name
 
@@ -161,7 +160,7 @@ class SigOptSearchCV(BaseSearchCV):
             any_floats = any(isinstance(x, float) for x in bounds)
             all_strings = all(isinstance(x, str) for x in bounds)
 
-            #convert entire bounds to floats if one is present
+            # convert entire bounds to floats if one is present
             if any_floats:
                 bounds = [float(b) for b in bounds]
                 all_floats = True
@@ -177,7 +176,7 @@ class SigOptSearchCV(BaseSearchCV):
             if param_type == 'categorical':
                 cat_vals = []
                 for str_name in bounds:
-                    cat_vals.append({"name":str_name})
+                    cat_vals.append({"name": str_name})
                 param_dict['categorical_values'] = cat_vals
             else:
                 bmin = min(bounds)
@@ -213,7 +212,7 @@ class SigOptSearchCV(BaseSearchCV):
         pval = param_dict[pname]
         if "__log__" in pname:
           pval = math.exp(pval)
-          pname = pname.replace("__log__","")
+          pname = pname.replace("__log__", "")
         log_converted_dict[pname] = pval
       return log_converted_dict
 
@@ -260,8 +259,8 @@ class SigOptSearchCV(BaseSearchCV):
             # returns scores on test set
             obs_timed_out = False
             try:
-                par_kwargs = {"n_jobs":self.n_jobs, "verbose":self.verbose,
-                              "pre_dispatch":pre_dispatch}
+                par_kwargs = {"n_jobs": self.n_jobs, "verbose": self.verbose,
+                              "pre_dispatch": pre_dispatch}
                 # add timeout kwarg if version of joblib supports it
                 if 'timeout' in getfullargspec(Parallel.__init__).args:
                     par_kwargs['timeout'] = self.timeout
@@ -269,9 +268,9 @@ class SigOptSearchCV(BaseSearchCV):
                     **par_kwargs
                 )(
                     delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
-                                        train, test, self.verbose, non_unicode_parameters,
-                                        self.fit_params, return_parameters=True,
-                                        error_score=self.error_score)
+                                            train, test, self.verbose, non_unicode_parameters,
+                                            self.fit_params, return_parameters=True,
+                                            error_score=self.error_score)
                         for train, test in cv)
             except TimeoutError:
                  obs_timed_out = True
@@ -294,7 +293,7 @@ class SigOptSearchCV(BaseSearchCV):
         # return best SigOpt observation so far
         best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
-         # convert all unicode names and values to plain strings
+        # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode_dict(self.best_params_)
         self.best_params_ = self._convert_log_params(self.best_params_)
         self.best_score_ = best_obs.value
@@ -311,7 +310,8 @@ class SigOptSearchCV(BaseSearchCV):
             self.best_estimator_ = best_estimator
 
     def fit(self, X, y=None):
-        """Run fit on the estimator with parameters chosen sequentially by SigOpt.
+        """
+        Run fit on the estimator with parameters chosen sequentially by SigOpt.
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
