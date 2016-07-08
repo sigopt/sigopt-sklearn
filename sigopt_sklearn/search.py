@@ -281,7 +281,6 @@ class SigOptSearchCV(BaseSearchCV):
         best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
-        self.best_params_ = self._convert_unicode_dict(self.best_params_)
         self.best_params_ = self._convert_log_params(self.best_params_)
         self.best_score_ = best_obs.value
 
