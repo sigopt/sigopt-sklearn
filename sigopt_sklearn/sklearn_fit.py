@@ -38,6 +38,13 @@ def parse_args():
   )
 
   parser.add_argument(
+    '--opt_timeout',
+    type=str,
+    required=True,
+    help="max time alloted for optimizing",
+  )
+
+  parser.add_argument(
    '--X_file',
    type=str,
    required=True,
@@ -76,6 +83,7 @@ def main():
   client_token = args['client_token']
   estimator_name = args['estimator']
   output_path = args['output_file']
+  opt_timeout = int(args['opt_timeout'])
   with open(X_path, 'rb') as infile:
     X = pickle.load(infile)
   with open(y_path, 'rb') as infile:
@@ -146,7 +154,7 @@ def main():
   clf = est
   if est_params is not None:
     n_iter = max(10*len(est_params), 20)
-    clf = SigOptSearchCV(est, est_params, cv=3,
+    clf = SigOptSearchCV(est, est_params, cv=3, opt_timeout=opt_timeout,
              client_token=client_token, n_jobs=3, n_iter=n_iter)
   
   clf.fit(X, y)
