@@ -20,7 +20,7 @@ addons:
       - 'libffi-dev'
       - 'liblapack-dev'
 install:
-  - pip install pytest pylint==1.4.1 astroid==1.3.8
+  - pip install pytest pylint
   # Installing  scipy causes the build to timeout because nothing gets output for 10 minutes.
   # So leak some of the output to keep travis going
   - pip install -r requirements.txt -v | awk '{if(rand()>0.9) print $0}'
