@@ -14,7 +14,6 @@ addons:
   apt:
     packages:
       - 'libatlas-base-dev'
-      - 'libatlas3-base'
       - 'libblas-dev'
       - 'libc6'
       - 'libedit-dev'
