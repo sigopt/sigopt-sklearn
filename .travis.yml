@@ -10,6 +10,16 @@ python:
   - "pypy"
 cache:
   pip: false
+addons:
+  apt:
+    packages:
+      - 'libatlas-base-dev'
+      - 'libatlas3-base'
+      - 'libblas-dev'
+      - 'libc6'
+      - 'libedit-dev'
+      - 'libffi-dev'
+      - 'liblapack-dev'
 install:
   - pip install pylint==1.4.1
   - pip install -r requirements.txt
