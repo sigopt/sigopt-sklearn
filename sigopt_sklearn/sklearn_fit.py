@@ -1,9 +1,8 @@
 import argparse
 import math
-import numpy as np
 import cPickle as pickle
 import scipy.sparse
-from search import SigOptSearchCV
+from .search import SigOptSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import SGDClassifier
@@ -16,9 +15,9 @@ from sklearn.dummy import DummyClassifier
 
 
 ESTIMATOR_NAMES = [
-    "SVMClassifier", 
+    "SVMClassifier",
     "GaussianNBClassifier",
-    "RandomForestClassifier", 
+    "RandomForestClassifier",
     "SGDClassifier",
     "XGBClassifier",
     "KNNClassifier",
@@ -28,7 +27,7 @@ ESTIMATOR_NAMES = [
 def parse_args():
   parser = argparse.ArgumentParser(
     description='SigOpt sklearn estimator fit script',
-  )  
+  )
 
   parser.add_argument(
     '--estimator',
@@ -126,9 +125,9 @@ def main():
   estname_2_args = {
     "GaussianNBClassifier": (GaussianNB(), None, False),
     "SVMClassifier": (SVC(probability=True), svm_params, True),
-    "RandomForestClassifier": (RandomForestClassifier(n_jobs=2), 
+    "RandomForestClassifier": (RandomForestClassifier(n_jobs=2),
                                rf_params, True),
-    "SGDClassifier": (SGDClassifier(penalty='elasticnet'), 
+    "SGDClassifier": (SGDClassifier(penalty='elasticnet'),
                       sgd_params, True),
     "XGBClassifier": (XGBClassifier(nthread=2), xgb_params, True),
     "KNNClassifier": (KNeighborsClassifier(n_jobs=2), knn_params, False),

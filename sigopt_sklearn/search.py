@@ -1,7 +1,9 @@
 import datetime
 import math
+from multiprocessing import TimeoutError
+
 import numpy
-import sigopt.interface
+import sigopt
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
 from sklearn.grid_search import BaseSearchCV
@@ -9,8 +11,7 @@ from sklearn.cross_validation import check_cv
 from sklearn.cross_validation import _fit_and_score
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
-from sklearn.base import BaseEstimator, is_classifier, clone
-from multiprocessing import TimeoutError
+from sklearn.base import is_classifier, clone
 
 
 class SigOptSearchCV(BaseSearchCV):
@@ -34,7 +35,7 @@ class SigOptSearchCV(BaseSearchCV):
         or ``scoring`` must be passed.
     param_domains : dict
         Dictionary with parameters names (string) as keys and domains
-        as lists of parameter ranges to try. Domains are either lists of categorial 
+        as lists of parameter ranges to try. Domains are either lists of categorial
         (string) values or 2 element lists specifying a min and max for
         integer or float parameters
     n_iter : int, default=10
@@ -236,7 +237,7 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        conn = sigopt.interface.Connection(client_token=self.client_token)
+        conn = sigopt.Connection(client_token=self.client_token)
         self._create_sigopt_exp(conn)
         for _ in xrange(self.n_iter):
             suggestion = conn.experiments(self.experiment.id).suggestions().create()
