@@ -22,7 +22,7 @@ addons:
       - 'libffi-dev'
       - 'liblapack-dev'
 install:
-  - pip install pytest pylint==1.4.1
+  - pip install pytest pylint==1.4.1 astroid==1.3.8
   - pip install -r requirements.txt
   - python setup.py clean --all
   - python setup.py install
