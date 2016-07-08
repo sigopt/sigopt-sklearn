@@ -215,9 +215,11 @@ class SigOptSearchCV(BaseSearchCV):
         log_converted_dict[pname] = pval
       return log_converted_dict
 
-    def _fit(self, X, y):
+    def _fit(self, X, y, parameter_iterable=None):
+        if parameter_iterable is not None:
+            raise NotImplementedError('The parameter_iterable argument is not supported.')
 
-        """Actual fitting,  performing the search over parameters."""
+        # Actual fitting,  performing the search over parameters.
         estimator = self.estimator
         cv = self.cv
         self.scorer_ = check_scoring(self.estimator, scoring=self.scoring)
