@@ -1,6 +1,10 @@
 from __future__ import absolute_import, print_function
 
-import cPickle as pickle
+try:
+  import cPickle as pickle
+except ImportError:
+  import pickle
+
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
 

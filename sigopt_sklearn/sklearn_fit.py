@@ -2,7 +2,10 @@ from __future__ import absolute_import, print_function
 
 import argparse
 import math
-import cPickle as pickle
+try:
+  import cPickle as pickle
+except ImportError:
+  import pickle
 
 import scipy.sparse
 from xgboost.sklearn import XGBClassifier
