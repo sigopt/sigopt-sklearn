@@ -57,7 +57,7 @@ class TestSearch(object):
     return request.param
 
   def to_sample_params(self, param_domains):
-    return dict(((p[0], p[1][0]) for p in param_domains.iteritems()))
+    return dict(((p[0], p[1][0]) for p in param_domains.items()))
 
   @pytest.fixture
   def param_domains(self, estimator_params_experiment):
