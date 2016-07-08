@@ -117,9 +117,9 @@ class TestSearch(object):
     create_definition = conn.experiments().create.call_args[1]
     assert create_definition['name'] == experiment_definition['name']
 
-    def sort_dicts(dicts):
-      return sorted(dicts, key=lambda d: sorted(d.items()))
-    assert sort_dicts(create_definition['parameters']) == sort_dicts(experiment_definition['parameters'])
+    assert len(create_definition['parameters']) == len(experiment_definition['parameters'])
+    for p in experiment_definition['parameters']:
+      assert p in create_definition['parameters']
     assert len(conn.experiments().fetch.mock_calls) == 1
     assert len(conn.experiments().suggestions().create.mock_calls) == n_iter
     assert len(conn.experiments().observations().create.mock_calls) == n_iter
