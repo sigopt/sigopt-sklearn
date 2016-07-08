@@ -17,5 +17,3 @@ install:
   - python setup.py install
 script:
   - ./lint
-  - for FILE in $(ls sigopt_sklearn/*.py); do PYTHONPATH=. python $FILE; done
-
