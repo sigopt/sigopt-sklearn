@@ -128,13 +128,19 @@ class SigOptSearchCV(BaseSearchCV):
         self.client_token = client_token
         self.timeout = timeout
         self.verbose = verbose
+
+        self.scorer_ = None
+        self.best_params_ = None
+        self.best_score_ = None
+        self.best_estimator_ = None
+        self.experiment = None
+
         super(SigOptSearchCV, self).__init__(
             estimator=estimator, scoring=scoring, fit_params=fit_params,
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
-    def _create_sigopt_exp(self):
-        self.conn = sigopt.interface.Connection(client_token=self.client_token)
+    def _create_sigopt_exp(self, conn):
         est_name = self.estimator.__class__.__name__
         exp_name = est_name+" (sklearn) "+datetime.datetime.now().strftime("%Y_%m_%d_%I%M_%S")
         if len(exp_name) > 50:
@@ -179,7 +185,7 @@ class SigOptSearchCV(BaseSearchCV):
             parameters.append(param_dict)
 
         # create sigopt experiment
-        self.experiment = self.conn.experiments().create(
+        self.experiment = conn.experiments().create(
             name=exp_name,
             parameters=parameters)
 
@@ -230,11 +236,12 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp()
-        for jk in xrange(self.n_iter):
-            suggestion = self.conn.experiments(self.experiment.id).suggestions().create()
+        conn = sigopt.interface.Connection(client_token=self.client_token)
+        self._create_sigopt_exp(conn)
+        for _ in xrange(self.n_iter):
+            suggestion = conn.experiments(self.experiment.id).suggestions().create()
             parameters = suggestion.assignments.to_json()
-     
+
             # convert all unicode names and values to plain strings
             non_unicode_parameters = self._convert_unicode_dict(parameters)
 
@@ -267,20 +274,20 @@ class SigOptSearchCV(BaseSearchCV):
             if not obs_timed_out:
                 # grab scores from results
                 scores = [o[0] for o in out]
-                self.conn.experiments(self.experiment.id).observations().create(
+                conn.experiments(self.experiment.id).observations().create(
                     suggestion=suggestion.id,
                     value=numpy.mean(scores),
                     value_stddev=numpy.std(scores)
                 )
             else:
                 # obsevation timed out so report a failure
-                self.conn.experiments(self.experiment.id).observations().create(
+                conn.experiments(self.experiment.id).observations().create(
                     suggestion=suggestion.id,
                     failed=True,
                 )
-              
+
         # return best SigOpt observation so far
-        best_obs = self.conn.experiments(self.experiment.id).fetch().progress.best_observation
+        best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
          # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode_dict(self.best_params_)
