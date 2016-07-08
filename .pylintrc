@@ -1,0 +1,6 @@
+[FORMAT]
+indent-string='  '
+max-line-length=120
+
+[TYPECHECK]
+ignored-modules='IGNORE,IGNORE,numpy,IGNORE,IGNORE'

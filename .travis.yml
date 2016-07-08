@@ -1,0 +1,21 @@
+sudo: false
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "pypy"
+cache:
+  pip: false
+install:
+  - pip install pylint==1.4.1
+  - pip install -r requirements.txt
+  - python setup.py clean --all
+  - python setup.py install
+script:
+  - ./lint
+  - for FILE in $(ls sigopt_sklearn/*.py); do PYTHONPATH=. python $FILE; done
+
