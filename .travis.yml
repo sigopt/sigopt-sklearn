@@ -19,6 +19,7 @@ addons:
       - 'libedit-dev'
       - 'libffi-dev'
       - 'liblapack-dev'
+      - 'python-scipy'
 install:
   - pip install pytest pylint
   # Installing  scipy causes the build to timeout because nothing gets output for 10 minutes.
