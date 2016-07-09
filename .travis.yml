@@ -7,7 +7,7 @@ python:
   - "3.4"
   - "3.5"
 cache:
-  pip: false
+  pip: true
 addons:
   apt:
     packages:
