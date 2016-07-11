@@ -64,13 +64,17 @@ class SigOptEnsembleClassifier(ClassifierMixin):
 
     sigopt_procs = []
     for build_args in self.estimator_build_args:
-      # run separate python process for each estiamtor with timeout
-      sigopt_procs.append(
-        Popen(["timeout", str(est_timeout), "python", sklearn_fit.__file__,
-           "--estimator", build_args['estimator'],
-           "--X_file", build_args['X_file'], "--y_file", build_args['y_file'],
-           "--client_token", client_token,
-           "--output_file", build_args['output_file']]))
+      # run separaete python process for each estimator with timeout
+      # these processes are wrapped in timeout command to capture case
+      # where a single observation never completes
+      sigopt_procs.append(Popen([
+        "timeout", str(est_timeout + 10), "python", sklearn_fit.__file__,
+        "--opt_timeout", str(est_timeout),
+        "--estimator", build_args['estimator'],
+        "--X_file", build_args['X_file'], "--y_file", build_args['y_file'],
+        "--client_token", client_token,
+        "--output_file", build_args['output_file']
+      ]))
     exit_codes = [p.wait() for p in sigopt_procs]
     return_codes_args = zip(exit_codes, self.estimator_build_args)
 

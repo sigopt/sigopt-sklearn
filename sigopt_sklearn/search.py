@@ -5,6 +5,7 @@ from multiprocessing import TimeoutError
 
 import numpy
 import sigopt
+import time
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
 from sklearn.grid_search import BaseSearchCV
@@ -44,7 +45,9 @@ class SigOptSearchCV(BaseSearchCV):
         off runtime vs quality of the solution.
     client_token : string
         SigOpt API client token, find yours here : https://sigopt.com/user/profile
-    timeout : float, optional
+    opt_timeout : float, optional
+        Max time for entire optimization process
+    cv_timeout : float, optional
         Max time each CV fold objective evaluation can take
     scoring : string, callable or None, default=None
         A string (see model evaluation documentation) or
@@ -117,18 +120,18 @@ class SigOptSearchCV(BaseSearchCV):
     `pre_dispatch` many times. A reasonable value for `pre_dispatch` is `2 *
     n_jobs`.
     """
-
     def __init__(self, estimator, param_domains, n_iter=10, scoring=None,
                  fit_params=None, n_jobs=1, iid=True, refit=True, cv=None,
                  verbose=0, pre_dispatch='2*n_jobs', error_score='raise',
-                 timeout=None, client_token=None):
+                 cv_timeout=None, opt_timeout=None, client_token=None):
 
         self.param_domains = param_domains
         self.n_iter = n_iter
         if not client_token:
             raise ValueError("Please find your client token here : https://sigopt.com/user/profile")
         self.client_token = client_token
-        self.timeout = timeout
+        self.cv_timeout = cv_timeout
+        self.opt_timeout = opt_timeout
         self.verbose = verbose
 
         self.scorer_ = None
@@ -232,7 +235,15 @@ class SigOptSearchCV(BaseSearchCV):
         # setup SigOpt experiment and run optimization
         conn = sigopt.Connection(client_token=self.client_token)
         self._create_sigopt_exp(conn)
-        for _ in range(self.n_iter):
+
+        # start tracking time to optimize estimator
+        opt_start_time = time.time()
+        for jk in xrange(self.n_iter):
+            # check for opt timeout, ensuring at least 1 observation
+            # TODO : handling failure observations
+            if (time.time() - opt_start_time > self.opt_timeout and jk >= 1):
+              # break out of loop and refit model with best params so far
+              break
             suggestion = conn.experiments(self.experiment.id).suggestions().create()
             parameters = suggestion.assignments.to_json()
 
@@ -250,7 +261,7 @@ class SigOptSearchCV(BaseSearchCV):
                               "pre_dispatch": pre_dispatch}
                 # add timeout kwarg if version of joblib supports it
                 if 'timeout' in getfullargspec(Parallel.__init__).args:
-                    par_kwargs['timeout'] = self.timeout
+                    par_kwargs['timeout'] = self.cv_timeout
                 out = Parallel(
                     **par_kwargs
                 )(
@@ -270,6 +281,7 @@ class SigOptSearchCV(BaseSearchCV):
                     value=numpy.mean(scores),
                     value_stddev=numpy.std(scores)
                 )
+
             else:
                 # obsevation timed out so report a failure
                 conn.experiments(self.experiment.id).observations().create(
