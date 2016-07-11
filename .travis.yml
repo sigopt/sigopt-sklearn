@@ -21,7 +21,7 @@ addons:
       - 'liblapack-dev'
       - 'python-scipy'
 install:
-  - pip install pytest pylint
+  - pip install pytest mock pylint
   # Installing  scipy causes the build to timeout because nothing gets output for 10 minutes.
   # So leak some output to keep travis going
   - pip install -v -r requirements.txt
