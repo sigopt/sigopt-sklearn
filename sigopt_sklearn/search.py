@@ -2,10 +2,10 @@ from __future__ import absolute_import, print_function
 
 import math
 from multiprocessing import TimeoutError
+import time
 
 import numpy
 import sigopt
-import time
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
 from sklearn.grid_search import BaseSearchCV
@@ -238,7 +238,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
-        for jk in xrange(self.n_iter):
+        for jk in range(self.n_iter):
             # check for opt timeout, ensuring at least 1 observation
             # TODO : handling failure observations
             if (time.time() - opt_start_time > self.opt_timeout and jk >= 1):
