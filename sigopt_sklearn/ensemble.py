@@ -77,4 +77,3 @@ class SigOptEnsembleClassifier(ClassifierMixin):
       with open(est_arg['output_file'], 'rb') as infile:
         clf = pickle.load(infile)
         self.estimator_ensemble.append(clf)
-
