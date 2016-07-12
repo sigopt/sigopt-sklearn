@@ -241,9 +241,13 @@ class SigOptSearchCV(BaseSearchCV):
         for jk in range(self.n_iter):
             # check for opt timeout, ensuring at least 1 observation
             # TODO : handling failure observations
-            if (time.time() - opt_start_time > self.opt_timeout and jk >= 1):
-              # break out of loop and refit model with best params so far
-              break
+            if (
+                self.opt_timeout is not None and
+                time.time() - opt_start_time > self.opt_timeout and
+                jk >= 1
+            ):
+                # break out of loop and refit model with best params so far
+                break
             suggestion = conn.experiments(self.experiment.id).suggestions().create()
             parameters = suggestion.assignments.to_json()
 
