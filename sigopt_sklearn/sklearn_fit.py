@@ -45,9 +45,10 @@ def parse_args():
 
   parser.add_argument(
     '--opt_timeout',
-    type=str,
-    required=True,
+    type=int,
     help="max time alloted for optimizing",
+    required=False,
+    default=None,
   )
 
   parser.add_argument(
@@ -89,7 +90,7 @@ def main():
   client_token = args['client_token']
   estimator_name = args['estimator']
   output_path = args['output_file']
-  opt_timeout = int(args['opt_timeout'])
+  opt_timeout = args['opt_timeout']
   with open(X_path, 'rb') as infile:
     X = pickle.load(infile)
   with open(y_path, 'rb') as infile:
