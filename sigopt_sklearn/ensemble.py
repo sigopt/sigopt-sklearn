@@ -38,21 +38,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
                    'output_file': results_file.name, 'estimator': est_name}
        self.estimator_build_args.append(arg_dict)
 
-  def _find_bayes_avg_coefs(self, X, y):
-    log_likelihoods = []
-    eps = 1e-4
-    for est in self.estimator_ensemble:
-      proba = est.predict_proba(X)
-      proba = np.nan_to_num(proba)
-      log_lik = sum(np.log(proba[np.arange(len(y)),y] + eps))
-      log_likelihoods.append(log_lik)
-    z = np.array(log_likelihoods)
-    z /= min(-z)
-    z = 1.0 / z
-    z = z / np.sum(z)
-    return z
-
-  def fit(self, X, y, client_token=None, est_timeout=None):
+  def parallel_fit(self, X, y, client_token=None, est_timeout=None):
     self.n_outputs_ = 1
     self.classes_ = np.array(np.unique(check_array(y, ensure_2d=False,
                                                    allow_nd=True, dtype=None)))
@@ -88,28 +74,3 @@ class SigOptEnsembleClassifier(ClassifierMixin):
         clf = pickle.load(infile)
         self.estimator_ensemble.append(clf)
 
-    # find weights for ensemble
-    self.estimator_bayes_avg_coefs = self._find_bayes_avg_coefs(X, y)
-
-  def predict_proba(self, X):
-    # validate X
-    # TODO : dim wrong when using 1d array
-    res_proba = np.zeros((X.shape[0], len(self.classes_)))
-    for idx, est in enumerate(self.estimator_ensemble):
-      w = self.estimator_bayes_avg_coefs[idx]
-      res_proba += w * np.nan_to_num(est.predict_proba(X))
-    return res_proba
-
-  def predict(self, X):
-    proba = self.predict_proba(X)
-    if self.n_outputs_ == 1:
-      return self.classes_.take(np.argmax(proba, axis=1), axis=0)
-    else:
-      n_samples = proba[0].shape[0]
-      predictions = np.zeros((n_samples, self.n_outputs_))
-
-      for k in range(self.n_outputs_):
-        predictions[:, k] = self.classes_[k].take(np.argmax(proba[k],
-                                                            axis=1),
-                                                  axis=0)
-      return predictions
