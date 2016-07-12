@@ -2,11 +2,13 @@ from setuptools import setup
 from sigopt_sklearn.version import VERSION
 
 # keep this in sync with requirements.txt
-install_requires=[
-   'sigopt',
-   'numpy',
-   'sklearn',
-   'joblib']
+install_requires = [
+  'joblib==0.9.4',
+  'numpy==1.10.1',
+  'scikit-learn==0.17.1',
+  'sigopt==1.6.4',
+  'xgboost==0.4a30',
+]
 
 setup(
   name='sigopt_sklearn',
