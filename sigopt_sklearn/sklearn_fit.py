@@ -1,24 +1,30 @@
+from __future__ import absolute_import, print_function
+
 import argparse
 import math
-import numpy as np
-import cPickle as pickle
+try:
+  import cPickle as pickle
+except ImportError:
+  import pickle
+
 import scipy.sparse
-from search import SigOptSearchCV
+from xgboost.sklearn import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import SGDClassifier
-from xgboost.sklearn import XGBClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.dummy import DummyClassifier
 
+from sigopt_sklearn.search import SigOptSearchCV
+
 
 ESTIMATOR_NAMES = [
-    "SVMClassifier", 
+    "SVMClassifier",
     "GaussianNBClassifier",
-    "RandomForestClassifier", 
+    "RandomForestClassifier",
     "SGDClassifier",
     "XGBClassifier",
     "KNNClassifier",
@@ -28,7 +34,7 @@ ESTIMATOR_NAMES = [
 def parse_args():
   parser = argparse.ArgumentParser(
     description='SigOpt sklearn estimator fit script',
-  )  
+  )
 
   parser.add_argument(
     '--estimator',
@@ -134,9 +140,9 @@ def main():
   estname_2_args = {
     "GaussianNBClassifier": (GaussianNB(), None, False),
     "SVMClassifier": (SVC(probability=True), svm_params, True),
-    "RandomForestClassifier": (RandomForestClassifier(n_jobs=2), 
+    "RandomForestClassifier": (RandomForestClassifier(n_jobs=2),
                                rf_params, True),
-    "SGDClassifier": (SGDClassifier(penalty='elasticnet'), 
+    "SGDClassifier": (SGDClassifier(penalty='elasticnet'),
                       sgd_params, True),
     "XGBClassifier": (XGBClassifier(nthread=2), xgb_params, True),
     "KNNClassifier": (KNeighborsClassifier(n_jobs=2), knn_params, False),
@@ -147,16 +153,23 @@ def main():
 
   # check that estimator can handle sparse matrices
   if scipy.sparse.issparse(X) and not est_handle_sparse:
-    est = DummyClassifier()
+    clf = DummyClassifier()
     est_params = None
+  elif est_params is not None:
+    # fit the estimator if it has params to tune
+    n_iter = max(10 * len(est_params), 20)
+    clf = SigOptSearchCV(
+      est,
+      est_params,
+      cv=3,
+      opt_timeout=opt_timeout,
+      client_token=client_token,
+      n_jobs=3,
+      n_iter=n_iter,
+    )
+  else:
+    clf = est
 
-  # fit the estimator if it has params to tune
-  clf = est
-  if est_params is not None:
-    n_iter = max(10*len(est_params), 20)
-    clf = SigOptSearchCV(est, est_params, cv=3, opt_timeout=opt_timeout,
-             client_token=client_token, n_jobs=3, n_iter=n_iter)
-  
   clf.fit(X, y)
   if hasattr(clf, 'best_estimator_'):
     clf = clf.best_estimator_
@@ -167,4 +180,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+export PYTHONPATH='sigopt_sklearn'
+
+PYTHON_VERSION=$(python --version 2>&1)
+if [[ $PYTHON_VERSION =~ "Python 2.6" || $PYTHON_VERSION =~ "Python 3.2" ]]; then
+  echo 'Skipping lint for unsupported python version'
+  exit 0
+fi
+
+pylint sigopt_sklearn \
+  -d abstract-class-instantiated \
+  -d abstract-class-little-used \
+  -d abstract-class-not-used \
+  -d abstract-method \
+  -d anomalous-unicode-escape-in-string \
+  -d bad-continuation \
+  -d bad-indentation \
+  -d bad-whitespace \
+  -d broad-except \
+  -d cell-var-from-loop \
+  -d duplicate-code \
+  -d fixme \
+  -d global-statement \
+  -d interface-not-implemented \
+  -d invalid-name \
+  -d locally-disabled \
+  -d locally-enabled \
+  -d missing-docstring \
+  -d no-init \
+  -d no-self-use \
+  -d no-value-for-parameter \
+  -d protected-access \
+  -d redefined-builtin \
+  -d redefined-variable-type \
+  -d star-args \
+  -d superfluous-parens \
+  -d too-few-instance-attributes \
+  -d too-few-public-methods \
+  -d too-many-ancestors \
+  -d too-many-arguments \
+  -d too-many-branches \
+  -d too-many-instance-attributes \
+  -d too-many-lines \
+  -d too-many-locals \
+  -d too-many-public-methods \
+  -d too-many-return-statements \
+  -d too-many-statements \
+  -d unbalanced-tuple-unpacking \
+  -d unidiomatic-typecheck \
+  -d unused-wildcard-import \
+  -d wildcard-import \
+  -r n \
+  --rcfile=.pylintrc

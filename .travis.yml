@@ -1,0 +1,32 @@
+sudo: false
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+cache:
+  pip: true
+addons:
+  apt:
+    packages:
+      - 'gcc'
+      - 'gfortran'
+      - 'libatlas-base-dev'
+      - 'libblas-dev'
+      - 'libc6'
+      - 'libedit-dev'
+      - 'libffi-dev'
+      - 'liblapack-dev'
+      - 'python-scipy'
+install:
+  - pip install pytest mock pylint
+  # Installing  scipy causes the build to timeout because nothing gets output for 10 minutes.
+  # So leak some output to keep travis going
+  - pip install -v -r requirements.txt
+  - python setup.py clean --all
+  - python setup.py install
+script:
+  - PYTHONPATH=. python -m pytest -rw -v test
+  - ./lint

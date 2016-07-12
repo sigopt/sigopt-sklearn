@@ -1,8 +1,11 @@
-import datetime
+from __future__ import absolute_import, print_function
+
 import math
-import numpy
-import sigopt.interface
+from multiprocessing import TimeoutError
 import time
+
+import numpy
+import sigopt
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
 from sklearn.grid_search import BaseSearchCV
@@ -10,8 +13,7 @@ from sklearn.cross_validation import check_cv
 from sklearn.cross_validation import _fit_and_score
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
-from sklearn.base import BaseEstimator, is_classifier, clone
-from multiprocessing import TimeoutError
+from sklearn.base import is_classifier, clone
 
 
 class SigOptSearchCV(BaseSearchCV):
@@ -35,7 +37,7 @@ class SigOptSearchCV(BaseSearchCV):
         or ``scoring`` must be passed.
     param_domains : dict
         Dictionary with parameters names (string) as keys and domains
-        as lists of parameter ranges to try. Domains are either lists of categorial 
+        as lists of parameter ranges to try. Domains are either lists of categorial
         (string) values or 2 element lists specifying a min and max for
         integer or float parameters
     n_iter : int, default=10
@@ -126,25 +128,31 @@ class SigOptSearchCV(BaseSearchCV):
         self.param_domains = param_domains
         self.n_iter = n_iter
         if not client_token:
-            print "Please find your client token here : https://sigopt.com/user/profile"
+            raise ValueError("Please find your client token here : https://sigopt.com/user/profile")
         self.client_token = client_token
         self.cv_timeout = cv_timeout
         self.opt_timeout = opt_timeout
         self.verbose = verbose
+
+        self.scorer_ = None
+        self.best_params_ = None
+        self.best_score_ = None
+        self.best_estimator_ = None
+        self.experiment = None
+
         super(SigOptSearchCV, self).__init__(
             estimator=estimator, scoring=scoring, fit_params=fit_params,
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
-    def _create_sigopt_exp(self):
-        self.conn = sigopt.interface.Connection(client_token=self.client_token)
+    def _create_sigopt_exp(self, conn):
         est_name = self.estimator.__class__.__name__
-        exp_name = est_name+" (sklearn) "+datetime.datetime.now().strftime("%Y_%m_%d_%I%M_%S")
+        exp_name = est_name + " (sklearn)"
         if len(exp_name) > 50:
             exp_name = est_name
 
         if self.verbose > 0:
-            print "Creating SigOpt experiment : ",exp_name
+            print("Creating SigOpt experiment: ", exp_name)
 
         # generate sigopt experiment parameters
         parameters = []
@@ -155,7 +163,7 @@ class SigOptSearchCV(BaseSearchCV):
             any_floats = any(isinstance(x, float) for x in bounds)
             all_strings = all(isinstance(x, str) for x in bounds)
 
-            #convert entire bounds to floats if one is present
+            # convert entire bounds to floats if one is present
             if any_floats:
                 bounds = [float(b) for b in bounds]
                 all_floats = True
@@ -171,7 +179,7 @@ class SigOptSearchCV(BaseSearchCV):
             if param_type == 'categorical':
                 cat_vals = []
                 for str_name in bounds:
-                    cat_vals.append({"name":str_name})
+                    cat_vals.append({"name": str_name})
                 param_dict['categorical_values'] = cat_vals
             else:
                 bmin = min(bounds)
@@ -182,23 +190,13 @@ class SigOptSearchCV(BaseSearchCV):
             parameters.append(param_dict)
 
         # create sigopt experiment
-        self.experiment = self.conn.experiments().create(
+        self.experiment = conn.experiments().create(
             name=exp_name,
             parameters=parameters)
 
         if self.verbose > 0:
             exp_url = "https://sigopt.com/experiment/{0}".format(self.experiment.id)
-            print "Experiment progress available at : ",exp_url
-
-    def _convert_unicode_dict(self, unicode_dict):
-        # convert all unicode names and values to plain strings
-        non_unicode_dict = {}
-        for pname in unicode_dict:
-            pval = unicode_dict[pname]
-            if isinstance(pval, unicode):
-                pval = str(pval)
-            non_unicode_dict[str(pname)] = pval
-        return non_unicode_dict
+            print("Experiment progress available at :", exp_url)
 
     def _convert_log_params(self, param_dict):
       # searches through names for params and converts params with __log__ names
@@ -207,13 +205,15 @@ class SigOptSearchCV(BaseSearchCV):
         pval = param_dict[pname]
         if "__log__" in pname:
           pval = math.exp(pval)
-          pname = pname.replace("__log__","")
+          pname = pname.replace("__log__", "")
         log_converted_dict[pname] = pval
       return log_converted_dict
 
-    def _fit(self, X, y):
+    def _fit(self, X, y, parameter_iterable=None):
+        if parameter_iterable is not None:
+            raise NotImplementedError('The parameter_iterable argument is not supported.')
 
-        """Actual fitting,  performing the search over parameters."""
+        # Actual fitting,  performing the search over parameters.
         estimator = self.estimator
         cv = self.cv
         self.scorer_ = check_scoring(self.estimator, scoring=self.scoring)
@@ -233,33 +233,36 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp()
-	# start tracking time to optimize estimator
+        conn = sigopt.Connection(client_token=self.client_token)
+        self._create_sigopt_exp(conn)
+
+        # start tracking time to optimize estimator
         opt_start_time = time.time()
-        for jk in xrange(self.n_iter):
+        for jk in range(self.n_iter):
             # check for opt timeout, ensuring at least 1 observation
             # TODO : handling failure observations
-            if (time.time() - opt_start_time > self.opt_timeout and jk >=1):
-              # break out of loop and refit model with best params so far
-              break
-            suggestion = self.conn.experiments(self.experiment.id).suggestions().create()
+            if (
+                self.opt_timeout is not None and
+                time.time() - opt_start_time > self.opt_timeout and
+                jk >= 1
+            ):
+                # break out of loop and refit model with best params so far
+                break
+            suggestion = conn.experiments(self.experiment.id).suggestions().create()
             parameters = suggestion.assignments.to_json()
-     
-            # convert all unicode names and values to plain strings
-            non_unicode_parameters = self._convert_unicode_dict(parameters)
 
             # automatically convert __log__ params
-            non_unicode_parameters = self._convert_log_params(non_unicode_parameters)
+            parameters = self._convert_log_params(parameters)
 
             if self.verbose > 0:
-                print "Evaluating params : ", non_unicode_parameters
+                print("Evaluating params : ", parameters)
 
             # do CV folds in parallel using joblib
             # returns scores on test set
             obs_timed_out = False
             try:
-                par_kwargs = {"n_jobs":self.n_jobs, "verbose":self.verbose,
-                              "pre_dispatch":pre_dispatch}
+                par_kwargs = {"n_jobs": self.n_jobs, "verbose": self.verbose,
+                              "pre_dispatch": pre_dispatch}
                 # add timeout kwarg if version of joblib supports it
                 if 'timeout' in getfullargspec(Parallel.__init__).args:
                     par_kwargs['timeout'] = self.cv_timeout
@@ -267,9 +270,9 @@ class SigOptSearchCV(BaseSearchCV):
                     **par_kwargs
                 )(
                     delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
-                                        train, test, self.verbose, non_unicode_parameters,
-                                        self.fit_params, return_parameters=True,
-                                        error_score=self.error_score)
+                                            train, test, self.verbose, parameters,
+                                            self.fit_params, return_parameters=True,
+                                            error_score=self.error_score)
                         for train, test in cv)
             except TimeoutError:
                  obs_timed_out = True
@@ -277,7 +280,7 @@ class SigOptSearchCV(BaseSearchCV):
             if not obs_timed_out:
                 # grab scores from results
                 scores = [o[0] for o in out]
-                self.conn.experiments(self.experiment.id).observations().create(
+                conn.experiments(self.experiment.id).observations().create(
                     suggestion=suggestion.id,
                     value=numpy.mean(scores),
                     value_stddev=numpy.std(scores)
@@ -285,16 +288,15 @@ class SigOptSearchCV(BaseSearchCV):
 
             else:
                 # obsevation timed out so report a failure
-                self.conn.experiments(self.experiment.id).observations().create(
+                conn.experiments(self.experiment.id).observations().create(
                     suggestion=suggestion.id,
                     failed=True,
                 )
-              
+
         # return best SigOpt observation so far
-        best_obs = self.conn.experiments(self.experiment.id).fetch().progress.best_observation
+        best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
-        self.best_params_ = self._convert_unicode_dict(self.best_params_)
         self.best_params_ = self._convert_log_params(self.best_params_)
         self.best_score_ = best_obs.value
 
@@ -308,9 +310,11 @@ class SigOptSearchCV(BaseSearchCV):
             else:
                 best_estimator.fit(X, **self.fit_params)
             self.best_estimator_ = best_estimator
+        return self
 
     def fit(self, X, y=None):
-        """Run fit on the estimator with parameters chosen sequentially by SigOpt.
+        """
+        Run fit on the estimator with parameters chosen sequentially by SigOpt.
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
@@ -321,4 +325,3 @@ class SigOptSearchCV(BaseSearchCV):
             None for unsupervised learning.
         """
         return self._fit(X, y)
-
