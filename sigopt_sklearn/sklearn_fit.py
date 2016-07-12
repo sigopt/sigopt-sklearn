@@ -16,7 +16,6 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
-from sklearn.dummy import DummyClassifier
 
 from sigopt_sklearn.search import SigOptSearchCV
 
@@ -154,8 +153,7 @@ def main():
 
   # check that estimator can handle sparse matrices
   if scipy.sparse.issparse(X) and not est_handle_sparse:
-    clf = DummyClassifier()
-    est_params = None
+    raise Exception('{} does not support sparse matrices.'.format(estimator_name))
   elif est_params is not None:
     # fit the estimator if it has params to tune
     n_iter = max(10 * len(est_params), 20)
