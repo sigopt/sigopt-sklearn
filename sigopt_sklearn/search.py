@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 
 import math
+import os
 from multiprocessing import TimeoutError
 import sys
 import time
@@ -132,9 +133,9 @@ class SigOptSearchCV(BaseSearchCV):
 
         self.param_domains = param_domains
         self.n_iter = n_iter
-        if not client_token:
+        self.client_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
+        if not self.client_token:
             raise ValueError("Please find your client token here : https://sigopt.com/user/profile")
-        self.client_token = client_token
         self.cv_timeout = cv_timeout
         self.opt_timeout = opt_timeout
         self.verbose = verbose
