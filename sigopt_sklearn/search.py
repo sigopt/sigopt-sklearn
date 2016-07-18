@@ -4,6 +4,7 @@ import math
 from multiprocessing import TimeoutError
 import time
 
+import collections
 import numpy
 import sigopt
 from joblib import Parallel, delayed
@@ -198,6 +199,16 @@ class SigOptSearchCV(BaseSearchCV):
             exp_url = "https://sigopt.com/experiment/{0}".format(self.experiment.id)
             print("Experiment progress available at :", exp_url)
 
+    def _convert_unicode(self, data):
+      if isinstance(data, basestring):
+        return str(data)
+      elif isinstance(data, collections.Mapping):
+        return dict(map(self._convert_unicode, data.iteritems()))
+      elif isinstance(data, collections.Iterable):
+        return type(data)(map(self._convert_unicode, data))
+      else:
+        return data
+
     def _convert_log_params(self, param_dict):
       # searches through names for params and converts params with __log__ names
       log_converted_dict = {}
@@ -251,6 +262,7 @@ class SigOptSearchCV(BaseSearchCV):
             suggestion = conn.experiments(self.experiment.id).suggestions().create()
             parameters = suggestion.assignments.to_json()
 
+            parameters = self._convert_unicode(parameters)
             # automatically convert __log__ params
             parameters = self._convert_log_params(parameters)
 
@@ -297,6 +309,7 @@ class SigOptSearchCV(BaseSearchCV):
         best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
+        self.best_params_ = self._convert_unicode(self.best_params_)
         self.best_params_ = self._convert_log_params(self.best_params_)
         self.best_score_ = best_obs.value
 
