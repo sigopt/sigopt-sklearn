@@ -18,7 +18,7 @@ from sklearn.utils.validation import _num_samples, indexable
 from sklearn.base import is_classifier, clone
 
 
-PY3 = sys.version_info[0] == 3
+HANDLES_UNICODE = sys.version_info[0] >= 3
 
 
 class SigOptSearchCV(BaseSearchCV):
@@ -205,7 +205,7 @@ class SigOptSearchCV(BaseSearchCV):
 
     # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
-      if PY3:
+      if HANDLES_UNICODE:
         return data
       elif isinstance(data, unicode):
         return str(data)
