@@ -8,6 +8,51 @@ Install the sigopt_sklearn python modules with `pip install sigopt_sklearn`.
 Sign up for an account at [https://sigopt.com](https://sigopt.com).
 To use the interfaces, you'll need your API token from your [user profile](https://sigopt.com/user/profile).
 
+### SigOptEnsembleClassifier
+
+This class concurrently trains and tunes several classification models within sklearn to facilitate model selection 
+efforts when investigating new datasets.  A short example, using an activity recognition dataset is provided below
+
+```
+# Human Activity Recognition Using Smartphone 
+# https://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
+wget https://archive.ics.uci.edu/ml/machine-learning-databases/00240/UCI%20HAR%20Dataset.zip
+unzip UCI\ HAR\ Dataset.zip 
+cd UCI\ HAR\ Dataset
+```
+ 
+```python
+import numpy as np
+import pandas as pd
+from sigopt_sklearn.ensemble import SigOptEnsembleClassifier
+
+def load_datafile(filename):
+  X = []
+  with open(filename,"r") as f:
+    for l in f:
+      X.append(np.array(map(float,l.split())))
+  X = np.vstack(X)
+  return X
+X_train = load_datafile("train/X_train.txt")
+y_train = load_datafile("train/y_train.txt").ravel()
+X_test = load_datafile("test/X_test.txt")
+y_test = load_datafile("test/y_test.txt").ravel()
+
+# fit and tune several classification models concurrently
+# find your SigOpt client token here : https://sigopt.com/user/profile
+sigopt_clf = SigOptEnsembleClassifier()
+sigopt_clf.parallel_fit(X_train, y_train, est_timeout=(40 * 60),
+               client_token='<YOUR_CLIENT_TOKEN>')
+
+# compare model performance on hold out set
+ensemble_train_scores = [est.score(X_train,y_train) for est in sigopt_clf.estimator_ensemble]
+ensemble_test_scores = [est.score(X_test,y_test) for est in sigopt_clf.estimator_ensemble]
+data = sorted(zip([est.__class__.__name__ 
+			for est in sigopt_clf.estimator_ensemble], ensemble_train_scores, ensemble_test_scores),
+			reverse=True, key= lambda x : (x[2], x[1]))
+pd.DataFrame(data, columns=['Classifier ALGO.', 'Train ACC.', 'Test ACC.'])
+```
+
 ### SigOptSearchCV
 
 The simplest use case for SigOpt in conjunction with scikit-learn is optimizing
