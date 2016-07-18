@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function
 
 import math
 from multiprocessing import TimeoutError
+import sys
 import time
 
 import collections
@@ -15,6 +16,9 @@ from sklearn.cross_validation import _fit_and_score
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
 from sklearn.base import is_classifier, clone
+
+
+PY3 = sys.version_info[0] == 3
 
 
 class SigOptSearchCV(BaseSearchCV):
@@ -199,8 +203,11 @@ class SigOptSearchCV(BaseSearchCV):
             exp_url = "https://sigopt.com/experiment/{0}".format(self.experiment.id)
             print("Experiment progress available at :", exp_url)
 
+    # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
-      if isinstance(data, basestring):
+      if PY3:
+        return data
+      elif isinstance(data, unicode):
         return str(data)
       elif isinstance(data, collections.Mapping):
         return dict(map(self._convert_unicode, data.iteritems()))
