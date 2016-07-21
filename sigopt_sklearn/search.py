@@ -49,6 +49,8 @@ class SigOptSearchCV(BaseSearchCV):
     n_iter : int, default=10
         Number of parameter settings that are sampled. n_iter trades
         off runtime vs quality of the solution.
+    n_sug : int, default=1
+        Number of suggestions to retrieve from SigOpt for evaluation in parallel
     client_token : string
         SigOpt API client token, find yours here : https://sigopt.com/user/profile
     opt_timeout : float, optional
@@ -128,11 +130,12 @@ class SigOptSearchCV(BaseSearchCV):
     """
     def __init__(self, estimator, param_domains, n_iter=10, scoring=None,
                  fit_params=None, n_jobs=1, iid=True, refit=True, cv=None,
-                 verbose=0, pre_dispatch='2*n_jobs', error_score='raise',
+                 verbose=0, n_sug=1, pre_dispatch='2*n_jobs', error_score='raise',
                  cv_timeout=None, opt_timeout=None, client_token=None):
 
         self.param_domains = param_domains
         self.n_iter = n_iter
+        self.n_sug = n_sug
         self.client_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
         if not self.client_token:
             raise ValueError("Please find your client token here : https://sigopt.com/user/profile")
@@ -257,7 +260,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
-        for jk in range(self.n_iter):
+        for jk in xrange(0, self.n_iter, self.n_sug):
             # check for opt timeout, ensuring at least 1 observation
             # TODO : handling failure observations
             if (
@@ -267,15 +270,20 @@ class SigOptSearchCV(BaseSearchCV):
             ):
                 # break out of loop and refit model with best params so far
                 break
-            suggestion = conn.experiments(self.experiment.id).suggestions().create()
-            parameters = suggestion.assignments.to_json()
 
-            parameters = self._convert_unicode(parameters)
-            # automatically convert __log__ params
-            parameters = self._convert_log_params(parameters)
+            parameter_configs = []
+            suggestions = []
+            for par in xrange(self.n_sug):
+                suggestion = conn.experiments(self.experiment.id).suggestions().create()
+                parameters = suggestion.assignments.to_json()
+                parameters = self._convert_unicode(parameters)
+                # automatically convert __log__ params
+                parameters = self._convert_log_params(parameters)
+                parameter_configs.append(parameters)
+                suggestions.append(suggestion)
 
             if self.verbose > 0:
-                print("Evaluating params : ", parameters)
+                print("Evaluating params : ", parameter_configs)
 
             # do CV folds in parallel using joblib
             # returns scores on test set
@@ -293,19 +301,22 @@ class SigOptSearchCV(BaseSearchCV):
                                             train, test, self.verbose, parameters,
                                             self.fit_params, return_parameters=True,
                                             error_score=self.error_score)
+                        for parameters in parameter_configs
                         for train, test in cv)
             except TimeoutError:
                  obs_timed_out = True
 
             if not obs_timed_out:
                 # grab scores from results
-                scores = [o[0] for o in out]
-                conn.experiments(self.experiment.id).observations().create(
-                    suggestion=suggestion.id,
-                    value=numpy.mean(scores),
-                    value_stddev=numpy.std(scores)
-                )
-
+                n_folds = len(cv)
+                for sidx, suggestion in enumerate(suggestions):
+                    out_sidx = n_folds * sidx
+                    scores = [o[0] for o in out[out_sidx:(out_sidx+n_folds)]]
+                    conn.experiments(self.experiment.id).observations().create(
+                        suggestion=suggestion.id,
+                        value=numpy.mean(scores),
+                        value_stddev=numpy.std(scores)
+                    )
             else:
                 # obsevation timed out so report a failure
                 conn.experiments(self.experiment.id).observations().create(
