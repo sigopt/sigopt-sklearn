@@ -209,6 +209,7 @@ class SigOptSearchCV(BaseSearchCV):
 
     # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
+      # pylint: disable=undefined-variable
       if HANDLES_UNICODE:
         return data
       elif isinstance(data, unicode):
@@ -219,6 +220,7 @@ class SigOptSearchCV(BaseSearchCV):
         return type(data)(map(self._convert_unicode, data))
       else:
         return data
+      # pylint: enable=undefined-variable
 
     def _convert_log_params(self, param_dict):
       # searches through names for params and converts params with __log__ names
@@ -260,7 +262,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
-        for jk in xrange(0, self.n_iter, self.n_sug):
+        for jk in range(0, self.n_iter, self.n_sug):
             # check for opt timeout, ensuring at least 1 observation
             # TODO : handling failure observations
             if (
@@ -273,7 +275,7 @@ class SigOptSearchCV(BaseSearchCV):
 
             parameter_configs = []
             suggestions = []
-            for par in xrange(self.n_sug):
+            for _ in range(self.n_sug):
                 suggestion = conn.experiments(self.experiment.id).suggestions().create()
                 parameters = suggestion.assignments.to_json()
                 parameters = self._convert_unicode(parameters)
