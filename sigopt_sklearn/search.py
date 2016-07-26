@@ -212,7 +212,7 @@ class SigOptSearchCV(BaseSearchCV):
       # pylint: disable=undefined-variable
       if HANDLES_UNICODE:
         return data
-      elif isinstance(data, unicode):
+      elif isinstance(data, basestring):
         return str(data)
       elif isinstance(data, collections.Mapping):
         return dict(map(self._convert_unicode, data.iteritems()))
