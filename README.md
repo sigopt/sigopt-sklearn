@@ -81,6 +81,7 @@ This class concurrently trains and tunes several classification models within sk
 efforts when investigating new datasets.  A short example, using an activity recognition dataset is provided below
 
 We also have a video tutorial outlining how to run this example here :
+
 [![SigOpt scikit-learn Tutorial](http://img.youtube.com/vi/9XZ3ihE7OjM/0.jpg)](http://www.youtube.com/watch?v=9XZ3ihE7OjM "SigOpt scikit-learn Hyperparameter Optimization Tutorial")
 
 ```
