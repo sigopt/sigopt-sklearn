@@ -143,18 +143,9 @@ class SigOptSearchCV(BaseSearchCV):
                  verbose=0, n_sug=1, pre_dispatch='2*n_jobs',
                  error_score='raise', cv_timeout=None, opt_timeout=None,
                  client_token=None, sigopt_connection=None):
-
         self.param_domains = param_domains
         self.n_iter = n_iter
         self.n_sug = n_sug
-        self.client_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
-        self.sigopt_connection = sigopt_connection
-        if (not self.client_token) and (not self.sigopt_connection):
-            raise ValueError(
-                'Please set the `SIGOPT_API_TOKEN` environment variable, pass '
-                'the ``client_token`` parameter, or pass the '
-                '``sigopt_connection`` parameter. You can find your client '
-                'token here: https://sigopt.com/user/profile.')
         self.cv_timeout = cv_timeout
         self.opt_timeout = opt_timeout
         self.verbose = verbose
@@ -164,6 +155,18 @@ class SigOptSearchCV(BaseSearchCV):
         self.best_score_ = None
         self.best_estimator_ = None
         self.experiment = None
+
+        # Set up sigopt_connection
+        found_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
+        if (not found_token) and (not self.sigopt_connection):
+            raise ValueError(
+                'Please set the `SIGOPT_API_TOKEN` environment variable, pass '
+                'the ``client_token`` parameter, or pass the '
+                '``sigopt_connection`` parameter. You can find your client '
+                'token here: https://sigopt.com/user/profile.')
+        else:
+            self.sigopt_connection = (sigopt_connection if sigopt_connection
+                    else sigopt.Connection(client_token=found_token))
 
         super(SigOptSearchCV, self).__init__(
             estimator=estimator, scoring=scoring, fit_params=fit_params,
@@ -251,7 +254,8 @@ class SigOptSearchCV(BaseSearchCV):
 
     def _fit(self, X, y, parameter_iterable=None):
         if parameter_iterable is not None:
-            raise NotImplementedError('The parameter_iterable argument is not supported.')
+            raise NotImplementedError('The parameter_iterable argument is not '
+                                      'supported.')
 
         # Actual fitting,  performing the search over parameters.
         estimator = self.estimator
@@ -273,9 +277,7 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        conn = (self.sigopt_connection if self.sigopt_connection
-                else sigopt.Connection(client_token=self.client_token))
-        self._create_sigopt_exp(conn)
+        self._create_sigopt_exp(self.sigopt_connection)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
@@ -293,7 +295,10 @@ class SigOptSearchCV(BaseSearchCV):
             parameter_configs = []
             suggestions = []
             for _ in range(self.n_sug):
-                suggestion = conn.experiments(self.experiment.id).suggestions().create()
+                suggestion = (self.sigopt_connection
+                                  .experiments(self.experiment.id)
+                                  .suggestions()
+                                  .create())
                 parameters = suggestion.assignments.to_json()
                 parameters = self._convert_unicode(parameters)
                 # automatically convert __log__ params
@@ -316,9 +321,11 @@ class SigOptSearchCV(BaseSearchCV):
                 out = Parallel(
                     **par_kwargs
                 )(
-                    delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
-                                            train, test, self.verbose, parameters,
-                                            self.fit_params, return_parameters=True,
+                    delayed(_fit_and_score)(clone(base_estimator), X, y,
+                                            self.scorer_, train, test,
+                                            self.verbose, parameters,
+                                            self.fit_params,
+                                            return_parameters=True,
                                             error_score=self.error_score)
                         for parameters in parameter_configs
                         for train, test in cv)
@@ -331,20 +338,25 @@ class SigOptSearchCV(BaseSearchCV):
                 for sidx, suggestion in enumerate(suggestions):
                     out_sidx = n_folds * sidx
                     scores = [o[0] for o in out[out_sidx:(out_sidx+n_folds)]]
-                    conn.experiments(self.experiment.id).observations().create(
-                        suggestion=suggestion.id,
-                        value=numpy.mean(scores),
-                        value_stddev=numpy.std(scores)
-                    )
+                    self.sigopt_connection \
+                        .experiments(self.experiment.id) \
+                        .observations() \
+                        .create(suggestion=suggestion.id,
+                                value=numpy.mean(scores),
+                                value_stddev=numpy.std(scores))
             else:
                 # obsevation timed out so report a failure
-                conn.experiments(self.experiment.id).observations().create(
-                    suggestion=suggestion.id,
-                    failed=True,
-                )
+                self.sigopt_connection \
+                    .experiments(self.experiment.id) \
+                    .observations() \
+                    .create(suggestion=suggestion.id, failed=True)
 
         # return best SigOpt observation so far
-        best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
+        best_obs = (self.sigopt_connection
+                        .experiments(self.experiment.id)
+                        .fetch()
+                        .progress
+                        .best_observation)
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode(self.best_params_)
