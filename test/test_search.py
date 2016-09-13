@@ -105,7 +105,8 @@ class TestSearch(object):
       )),
     ))
     n_iter = 5
-    cv = SigOptSearchCV(estimator=estimator, param_domains=param_domains, client_token='client_token', n_iter=n_iter)
+    cv = SigOptSearchCV(estimator=estimator, param_domains=param_domains,
+                        client_token='client_token', n_iter=n_iter)
     assert len(conn.experiments().create.mock_calls) == 0
     assert len(conn.experiments().fetch.mock_calls) == 0
     assert len(conn.experiments().suggestions.create.mock_calls) == 0
