@@ -158,7 +158,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         # Set up sigopt_connection
         found_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
-        if (not found_token) and (not self.sigopt_connection):
+        if (not found_token) and (not sigopt_connection):
             raise ValueError(
                 'Please set the `SIGOPT_API_TOKEN` environment variable, pass '
                 'the ``client_token`` parameter, or pass the '
