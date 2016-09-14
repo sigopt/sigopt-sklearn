@@ -1,3 +1,5 @@
+# Also update `install_requires` in `setup.py`!
+
 joblib==0.9.4
 numpy>=1.9
 scikit-learn==0.17.1
