@@ -1,7 +1,7 @@
 from setuptools import setup
 from sigopt_sklearn.version import VERSION
 
-# keep this in sync with requirements.txt
+# Keep this in sync with `requirements.txt` and the conda install process in `.travis.yml`!
 install_requires = [
   'joblib==0.9.4',
   'numpy>=1.9',

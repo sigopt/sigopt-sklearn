@@ -1,4 +1,4 @@
-# Also update `install_requires` in `setup.py`!
+# Also update `install_requires` in `setup.py` and the conda install process in `.travis.yml`!
 
 joblib==0.9.4
 numpy>=1.9
