@@ -1,7 +1,6 @@
 sudo: false
 language: python
 python:
-  - "2.6"
   - "2.7"
   - "3.3"
   - "3.4"
@@ -11,16 +10,15 @@ cache:
 
 # Install miniconda
 before_install:
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.5.5-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh; fi
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.19.0-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.19.0-Linux-x86_64.sh -O miniconda.sh; fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p /home/travis/miniconda
   - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
 
 install:
   # Preinstall numpy and scikit-learn with conda in order to speed up build process. Versions should match the
   # corresponding requirements.txt versions. A compatible version of scipy is gathered as a prerequisite of sciki-learn.
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy=1.10.1 scikit-learn=0.17.1
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION 'numpy>=1.9' 'scikit-learn=0.17.1'
 
   - pip install pytest mock pylint
   - pip install -r requirements.txt
