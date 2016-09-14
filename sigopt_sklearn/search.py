@@ -160,10 +160,9 @@ class SigOptSearchCV(BaseSearchCV):
         found_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
         if (not found_token) and (not sigopt_connection):
             raise ValueError(
-                'Please set the `SIGOPT_API_TOKEN` environment variable, pass '
-                'the ``client_token`` parameter, or pass the '
-                '``sigopt_connection`` parameter. You can find your client '
-                'token here: https://sigopt.com/user/profile.')
+                'Please set the `SIGOPT_API_TOKEN` environment variable, pass the ``client_token`` parameter, or pass '
+                'the ``sigopt_connection`` parameter. You can find your client token here: '
+                'https://sigopt.com/user/profile.')
         else:
             self.sigopt_connection = (sigopt_connection if sigopt_connection
                     else sigopt.Connection(client_token=found_token))
@@ -254,8 +253,7 @@ class SigOptSearchCV(BaseSearchCV):
 
     def _fit(self, X, y, parameter_iterable=None):
         if parameter_iterable is not None:
-            raise NotImplementedError('The parameter_iterable argument is not '
-                                      'supported.')
+            raise NotImplementedError('The parameter_iterable argument is not supported.')
 
         # Actual fitting,  performing the search over parameters.
         estimator = self.estimator
@@ -267,8 +265,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         if y is not None:
             if len(y) != n_samples:
-                raise ValueError('Target variable (y) has a different number '
-                                 'of samples (%i) than data (X: %i samples)'
+                raise ValueError('Target variable (y) has a different number of samples (%i) than data (X: %i samples)'
                                  % (len(y), n_samples))
 
         cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
@@ -295,10 +292,7 @@ class SigOptSearchCV(BaseSearchCV):
             parameter_configs = []
             suggestions = []
             for _ in range(self.n_sug):
-                suggestion = (self.sigopt_connection
-                                  .experiments(self.experiment.id)
-                                  .suggestions()
-                                  .create())
+                suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
                 parameters = suggestion.assignments.to_json()
                 parameters = self._convert_unicode(parameters)
                 # automatically convert __log__ params
@@ -338,25 +332,18 @@ class SigOptSearchCV(BaseSearchCV):
                 for sidx, suggestion in enumerate(suggestions):
                     out_sidx = n_folds * sidx
                     scores = [o[0] for o in out[out_sidx:(out_sidx+n_folds)]]
-                    self.sigopt_connection \
-                        .experiments(self.experiment.id) \
-                        .observations() \
-                        .create(suggestion=suggestion.id,
-                                value=numpy.mean(scores),
-                                value_stddev=numpy.std(scores))
+                    self.sigopt_connection.experiments(self.experiment.id).observations().create(
+                        suggestion=suggestion.id,
+                        value=numpy.mean(scores),
+                        value_stddev=numpy.std(scores))
             else:
                 # obsevation timed out so report a failure
-                self.sigopt_connection \
-                    .experiments(self.experiment.id) \
-                    .observations() \
-                    .create(suggestion=suggestion.id, failed=True)
+                self.sigopt_connection.experiments(self.experiment.id).observations().create(
+                    suggestion=suggestion.id,
+                    failed=True)
 
         # return best SigOpt observation so far
-        best_obs = (self.sigopt_connection
-                        .experiments(self.experiment.id)
-                        .fetch()
-                        .progress
-                        .best_observation)
+        best_obs = self.sigopt_connection.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode(self.best_params_)
@@ -366,8 +353,7 @@ class SigOptSearchCV(BaseSearchCV):
         if self.refit:
             # fit the best estimator using the entire dataset
             # clone first to work around broken estimators
-            best_estimator = clone(base_estimator).set_params(
-                **self.best_params_)
+            best_estimator = clone(base_estimator).set_params(**self.best_params_)
             if y is not None:
                 best_estimator.fit(X, y, **self.fit_params)
             else:
