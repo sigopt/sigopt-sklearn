@@ -34,6 +34,7 @@ class SigOptSearchCV(BaseSearchCV):
     rather a fixed number of parameter settings is chosen from the specified
     domains. The number of parameter settings that are tried is
     given by n_iter.
+
     Parameters
     ----------
     estimator : estimator object.
@@ -42,35 +43,42 @@ class SigOptSearchCV(BaseSearchCV):
         Either estimator needs to provide a ``score`` function,
         or ``scoring`` must be passed.
     param_domains : dict
-        Dictionary with parameters names (string) as keys and domains
-        as lists of parameter ranges to try. Domains are either lists of categorial
-        (string) values or 2 element lists specifying a min and max for
-        integer or float parameters
+        Dictionary with parameters names (string) as keys and domains as lists
+        of parameter ranges to try. Domains are either lists of categorical
+        (string) values or 2 element lists specifying a min and max for integer
+        or float parameters
     n_iter : int, default=10
-        Number of parameter settings that are sampled. n_iter trades
-        off runtime vs quality of the solution.
+        Number of parameter settings that are sampled. n_iter trades off runtime
+        vs quality of the solution.
     n_sug : int, default=1
         Number of suggestions to retrieve from SigOpt for evaluation in parallel
-    client_token : string
-        SigOpt API client token, find yours here : https://sigopt.com/user/profile
+    client_token : string, optional
+        SigOpt API client token, find yours here:
+        https://sigopt.com/user/profile. This field is required except when the
+        ``sigopt_connection`` argument is present or when the
+        ``SIGOPT_API_TOKEN`` environment variable is set. We recommend using
+        this instead of ``sigopt_connection``.
+    sigopt_connection : sigopt.interface.Connection, optional
+        SigOpt API Connection object. If present, this object will be used to
+        connect to SigOpt in lieu of the client token. We recommend using the
+        ``client_token`` option instead of this one.
     opt_timeout : float, optional
         Max time for entire optimization process
     cv_timeout : float, optional
         Max time each CV fold objective evaluation can take
     scoring : string, callable or None, default=None
-        A string (see model evaluation documentation) or
-        a scorer callable object / function with signature
-        ``scorer(estimator, X, y)``.
-        If ``None``, the ``score`` method of the estimator is used.
+        A string (see model evaluation documentation) or a scorer callable
+        object / function with signature ``scorer(estimator, X, y)``. If
+        ``None``, the ``score`` method of the estimator is used.
     fit_params : dict, optional
         Parameters to pass to the fit method.
     n_jobs : int, default=1
         Number of jobs to run in parallel.
     pre_dispatch : int, or string, optional
         Controls the number of jobs that get dispatched during parallel
-        execution. Reducing this number can be useful to avoid an
-        explosion of memory consumption when more jobs get dispatched
-        than CPUs can process. This parameter can be:
+        execution. Reducing this number can be useful to avoid an explosion of
+        memory consumption when more jobs get dispatched than CPUs can process.
+        This parameter can be:
             - None, in which case all the jobs are immediately
               created and spawned. Use this for lightweight and
               fast-running jobs, to avoid delays due to on-demand
@@ -80,9 +88,9 @@ class SigOptSearchCV(BaseSearchCV):
             - A string, giving an expression as a function of n_jobs,
               as in '2*n_jobs'
     iid : boolean, default=True
-        If True, the data is assumed to be identically distributed across
-        the folds, and the loss minimized is the total loss per sample,
-        and not the mean loss across the folds.
+        If True, the data is assumed to be identically distributed across the
+        folds, and the loss minimized is the total loss per sample, and not the
+        mean loss across the folds.
     cv : int, cross-validation generator or an iterable, optional
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
@@ -91,21 +99,22 @@ class SigOptSearchCV(BaseSearchCV):
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
         For integer/None inputs, if the estimator is a classifier and ``y`` is
-        either binary or multiclass, :class:`StratifiedKFold` used. In all
-        other cases, :class:`KFold` is used.
+        either binary or multiclass, :class:`StratifiedKFold` used. In all other
+        cases, :class:`KFold` is used.
         Refer :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
     refit : boolean, default=True
-        Refit the best estimator with the entire dataset.
-        If "False", it is impossible to make predictions using
-        this RandomizedSearchCV instance after fitting.
+        Refit the best estimator with the entire dataset. If "False", it is
+        impossible to make predictions using this RandomizedSearchCV instance
+        after fitting.
     verbose : integer
         Controls the verbosity: the higher, the more messages.
     error_score : 'raise' (default) or numeric
-        Value to assign to the score if an error occurs in estimator fitting.
-        If set to 'raise', the error is raised. If a numeric value is given,
+        Value to assign to the score if an error occurs in estimator fitting. If
+        set to 'raise', the error is raised. If a numeric value is given,
         FitFailedWarning is raised. This parameter does not affect the refit
         step, which will always raise the error.
+
     Attributes
     ----------
     best_estimator_ : estimator
@@ -116,6 +125,7 @@ class SigOptSearchCV(BaseSearchCV):
         Score of best_estimator on the left out data.
     best_params_ : dict
         Parameter setting that gave the best results on the hold out data.
+
     Notes
     -----
     The parameters selected are those that maximize the score of the held-out
@@ -130,15 +140,12 @@ class SigOptSearchCV(BaseSearchCV):
     """
     def __init__(self, estimator, param_domains, n_iter=10, scoring=None,
                  fit_params=None, n_jobs=1, iid=True, refit=True, cv=None,
-                 verbose=0, n_sug=1, pre_dispatch='2*n_jobs', error_score='raise',
-                 cv_timeout=None, opt_timeout=None, client_token=None):
-
+                 verbose=0, n_sug=1, pre_dispatch='2*n_jobs',
+                 error_score='raise', cv_timeout=None, opt_timeout=None,
+                 client_token=None, sigopt_connection=None):
         self.param_domains = param_domains
         self.n_iter = n_iter
         self.n_sug = n_sug
-        self.client_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
-        if not self.client_token:
-            raise ValueError("Please find your client token here : https://sigopt.com/user/profile")
         self.cv_timeout = cv_timeout
         self.opt_timeout = opt_timeout
         self.verbose = verbose
@@ -149,6 +156,17 @@ class SigOptSearchCV(BaseSearchCV):
         self.best_estimator_ = None
         self.experiment = None
 
+        # Set up sigopt_connection
+        found_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
+        if (not found_token) and (not sigopt_connection):
+            raise ValueError(
+                'Please set the `SIGOPT_API_TOKEN` environment variable, pass the ``client_token`` parameter, or pass '
+                'the ``sigopt_connection`` parameter. You can find your client token here: '
+                'https://sigopt.com/user/profile.')
+        else:
+            self.sigopt_connection = (sigopt_connection if sigopt_connection
+                    else sigopt.Connection(client_token=found_token))
+
         super(SigOptSearchCV, self).__init__(
             estimator=estimator, scoring=scoring, fit_params=fit_params,
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
@@ -156,12 +174,12 @@ class SigOptSearchCV(BaseSearchCV):
 
     def _create_sigopt_exp(self, conn):
         est_name = self.estimator.__class__.__name__
-        exp_name = est_name + " (sklearn)"
+        exp_name = est_name + ' (sklearn)'
         if len(exp_name) > 50:
             exp_name = est_name
 
         if self.verbose > 0:
-            print("Creating SigOpt experiment: ", exp_name)
+            print('Creating SigOpt experiment: ', exp_name)
 
         # generate sigopt experiment parameters
         parameters = []
@@ -188,12 +206,12 @@ class SigOptSearchCV(BaseSearchCV):
             if param_type == 'categorical':
                 cat_vals = []
                 for str_name in bounds:
-                    cat_vals.append({"name": str_name})
+                    cat_vals.append({'name': str_name})
                 param_dict['categorical_values'] = cat_vals
             else:
                 bmin = min(bounds)
                 bmax = max(bounds)
-                param_dict['bounds'] = {"min": bmin, "max": bmax}
+                param_dict['bounds'] = {'min': bmin, 'max': bmax}
 
             # add parameter definition to list
             parameters.append(param_dict)
@@ -204,8 +222,8 @@ class SigOptSearchCV(BaseSearchCV):
             parameters=parameters)
 
         if self.verbose > 0:
-            exp_url = "https://sigopt.com/experiment/{0}".format(self.experiment.id)
-            print("Experiment progress available at :", exp_url)
+            exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)
+            print('Experiment progress available at :', exp_url)
 
     # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
@@ -227,9 +245,9 @@ class SigOptSearchCV(BaseSearchCV):
       log_converted_dict = {}
       for pname in param_dict:
         pval = param_dict[pname]
-        if "__log__" in pname:
+        if '__log__' in pname:
           pval = math.exp(pval)
-          pname = pname.replace("__log__", "")
+          pname = pname.replace('__log__', '')
         log_converted_dict[pname] = pval
       return log_converted_dict
 
@@ -247,8 +265,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         if y is not None:
             if len(y) != n_samples:
-                raise ValueError('Target variable (y) has a different number '
-                                 'of samples (%i) than data (X: %i samples)'
+                raise ValueError('Target variable (y) has a different number of samples (%i) than data (X: %i samples)'
                                  % (len(y), n_samples))
 
         cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
@@ -257,8 +274,7 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        conn = sigopt.Connection(client_token=self.client_token)
-        self._create_sigopt_exp(conn)
+        self._create_sigopt_exp(self.sigopt_connection)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
@@ -276,7 +292,7 @@ class SigOptSearchCV(BaseSearchCV):
             parameter_configs = []
             suggestions = []
             for _ in range(self.n_sug):
-                suggestion = conn.experiments(self.experiment.id).suggestions().create()
+                suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
                 parameters = suggestion.assignments.to_json()
                 parameters = self._convert_unicode(parameters)
                 # automatically convert __log__ params
@@ -285,23 +301,25 @@ class SigOptSearchCV(BaseSearchCV):
                 suggestions.append(suggestion)
 
             if self.verbose > 0:
-                print("Evaluating params : ", parameter_configs)
+                print('Evaluating params : ', parameter_configs)
 
             # do CV folds in parallel using joblib
             # returns scores on test set
             obs_timed_out = False
             try:
-                par_kwargs = {"n_jobs": self.n_jobs, "verbose": self.verbose,
-                              "pre_dispatch": pre_dispatch}
+                par_kwargs = {'n_jobs': self.n_jobs, 'verbose': self.verbose,
+                              'pre_dispatch': pre_dispatch}
                 # add timeout kwarg if version of joblib supports it
                 if 'timeout' in getfullargspec(Parallel.__init__).args:
                     par_kwargs['timeout'] = self.cv_timeout
                 out = Parallel(
                     **par_kwargs
                 )(
-                    delayed(_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
-                                            train, test, self.verbose, parameters,
-                                            self.fit_params, return_parameters=True,
+                    delayed(_fit_and_score)(clone(base_estimator), X, y,
+                                            self.scorer_, train, test,
+                                            self.verbose, parameters,
+                                            self.fit_params,
+                                            return_parameters=True,
                                             error_score=self.error_score)
                         for parameters in parameter_configs
                         for train, test in cv)
@@ -314,20 +332,18 @@ class SigOptSearchCV(BaseSearchCV):
                 for sidx, suggestion in enumerate(suggestions):
                     out_sidx = n_folds * sidx
                     scores = [o[0] for o in out[out_sidx:(out_sidx+n_folds)]]
-                    conn.experiments(self.experiment.id).observations().create(
+                    self.sigopt_connection.experiments(self.experiment.id).observations().create(
                         suggestion=suggestion.id,
                         value=numpy.mean(scores),
-                        value_stddev=numpy.std(scores)
-                    )
+                        value_stddev=numpy.std(scores))
             else:
                 # obsevation timed out so report a failure
-                conn.experiments(self.experiment.id).observations().create(
+                self.sigopt_connection.experiments(self.experiment.id).observations().create(
                     suggestion=suggestion.id,
-                    failed=True,
-                )
+                    failed=True)
 
         # return best SigOpt observation so far
-        best_obs = conn.experiments(self.experiment.id).fetch().progress.best_observation
+        best_obs = self.sigopt_connection.experiments(self.experiment.id).fetch().progress.best_observation
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode(self.best_params_)
@@ -337,8 +353,7 @@ class SigOptSearchCV(BaseSearchCV):
         if self.refit:
             # fit the best estimator using the entire dataset
             # clone first to work around broken estimators
-            best_estimator = clone(base_estimator).set_params(
-                **self.best_params_)
+            best_estimator = clone(base_estimator).set_params(**self.best_params_)
             if y is not None:
                 best_estimator.fit(X, y, **self.fit_params)
             else:
