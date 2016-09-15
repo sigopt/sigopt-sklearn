@@ -42,6 +42,22 @@ clf.fit(iris.data, iris.target)
 # clf.best_params_ contains best found param configuration
 ```
 
+The objective optimized by default is is the default score associated with the estimator
+, however users can provide a different metric by passing the `scoring` option to the SigOptSearchCV constructor.
+Shown below is an example that uses the f1_score already implemented in sklearn
+
+```python
+from sklearn.metrics import f1_score, make_scorer
+f1_scorer = make_scorer(f1_score)
+
+# define SigOptCV search strategy
+clf = SigOptSearchCV(svr, svc_parameters, cv=5, scoring=f1_scorer,
+    client_token=client_token, n_jobs=5, n_iter=50)
+
+# perform CV search for best parameters
+clf.fit(X, y)
+```
+
 ### XGBoostClassifier
 
 SigOptSearchCV also works with XGBoost's XGBClassifier wrapper.  A
