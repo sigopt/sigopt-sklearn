@@ -42,8 +42,8 @@ clf.fit(iris.data, iris.target)
 # clf.best_params_ contains best found param configuration
 ```
 
-The objective optimized by default is is the default score associated with the estimator
-, however users can provide a different metric by passing the `scoring` option to the SigOptSearchCV constructor.
+The objective optimized by default is is the default score associated with an estimator. 
+A custom objective can be used by passing the `scoring` option to the SigOptSearchCV constructor.
 Shown below is an example that uses the f1_score already implemented in sklearn
 
 ```python
