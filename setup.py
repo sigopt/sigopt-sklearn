@@ -7,7 +7,6 @@ install_requires = [
   'numpy>=1.9',
   'scikit-learn>=0.17.1',
   'sigopt>=2.1.0',
-  'xgboost>=0.4a30',
 ]
 
 setup(
@@ -19,6 +18,9 @@ setup(
   url='https://sigopt.com/',
   packages=['sigopt_sklearn'],
   install_requires=install_requires,
+  extras_require={
+    'ensemble': ['xgboost>=0.4a30'],
+  },
   classifiers=[
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
