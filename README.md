@@ -94,8 +94,16 @@ clf.fit(iris.data, iris.target)
 ### SigOptEnsembleClassifier
 
 This class concurrently trains and tunes several classification models within sklearn to facilitate model selection
-efforts when investigating new datasets.  A short example, using an activity recognition dataset is provided below
+efforts when investigating new datasets.
 
+You'll need to install the sigopt_sklearn library with the extra requirements of xgboost for this aspect of the library
+to work :
+
+```
+pip install sigopt_sklearn[ensemble]
+```
+
+A short example, using an activity recognition dataset is provided below
 We also have a video tutorial outlining how to run this example here :
 
 [![SigOpt scikit-learn Tutorial](http://img.youtube.com/vi/9XZ3ihE7OjM/0.jpg)](http://www.youtube.com/watch?v=9XZ3ihE7OjM "SigOpt scikit-learn Hyperparameter Optimization Tutorial")
