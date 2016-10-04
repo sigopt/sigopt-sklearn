@@ -23,7 +23,8 @@ install:
   - pip install pytest mock pylint
   - pip install -r requirements.txt
   - python setup.py clean --all
-  - python setup.py install
+  # - python setup.py install
+  - pip install -e .[ensemble]
 script:
   - PYTHONPATH=. python -m pytest -rw -v test
   - ./lint
