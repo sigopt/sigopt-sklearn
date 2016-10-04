@@ -140,9 +140,9 @@ class SigOptSearchCV(BaseSearchCV):
     `pre_dispatch` many times. A reasonable value for `pre_dispatch` is `2 *
     n_jobs`.
     """
-    def __init__(self, estimator, param_domains, n_iter=10, n_sug=1, experiment=None, client_token=None,
-                 sigopt_connection=None, opt_timeout=None, cv_timeout=None, scoring=None, fit_params=None, n_jobs=1,
-                 pre_dispatch='2*n_jobs', iid=True, cv=None, refit=True, verbose=0, error_score='raise'):
+    def __init__(self, estimator, param_domains, n_iter=10, scoring=None, fit_params=None, n_jobs=1, iid=True,
+                 refit=True, cv=None, verbose=0, n_sug=1, pre_dispatch='2*n_jobs', error_score='raise', cv_timeout=None,
+                 opt_timeout=None, client_token=None, sigopt_connection=None, experiment=None):
         self.param_domains = param_domains
         self.n_iter = n_iter
         self.n_sug = n_sug
