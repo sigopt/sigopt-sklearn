@@ -52,6 +52,8 @@ class SigOptSearchCV(BaseSearchCV):
         vs quality of the solution.
     n_sug : int, default=1
         Number of suggestions to retrieve from SigOpt for evaluation in parallel
+    experiment : sigopt.interface.Experiment, optional
+        The SigOpt experiment to use for optimization. If none is set then a new experiment is created.
     client_token : string, optional
         SigOpt API client token, find yours here:
         https://sigopt.com/user/profile. This field is required except when the
@@ -138,11 +140,9 @@ class SigOptSearchCV(BaseSearchCV):
     `pre_dispatch` many times. A reasonable value for `pre_dispatch` is `2 *
     n_jobs`.
     """
-    def __init__(self, estimator, param_domains, n_iter=10, scoring=None,
-                 fit_params=None, n_jobs=1, iid=True, refit=True, cv=None,
-                 verbose=0, n_sug=1, pre_dispatch='2*n_jobs',
-                 error_score='raise', cv_timeout=None, opt_timeout=None,
-                 client_token=None, sigopt_connection=None):
+    def __init__(self, estimator, param_domains, n_iter=10, scoring=None, fit_params=None, n_jobs=1, iid=True,
+                 refit=True, cv=None, verbose=0, n_sug=1, pre_dispatch='2*n_jobs', error_score='raise', cv_timeout=None,
+                 opt_timeout=None, client_token=None, sigopt_connection=None, experiment=None):
         self.param_domains = param_domains
         self.n_iter = n_iter
         self.n_sug = n_sug
@@ -154,7 +154,7 @@ class SigOptSearchCV(BaseSearchCV):
         self.best_params_ = None
         self.best_score_ = None
         self.best_estimator_ = None
-        self.experiment = None
+        self.experiment = experiment
 
         # Set up sigopt_connection
         found_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
@@ -217,13 +217,15 @@ class SigOptSearchCV(BaseSearchCV):
             parameters.append(param_dict)
 
         # create sigopt experiment
-        self.experiment = conn.experiments().create(
+        experiment = conn.experiments().create(
             name=exp_name,
             parameters=parameters)
 
         if self.verbose > 0:
             exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)
             print('Experiment progress available at :', exp_url)
+
+        return experiment
 
     # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
@@ -274,7 +276,8 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp(self.sigopt_connection)
+        if self.experiment is None:
+            self.experiment = self._create_sigopt_exp(self.sigopt_connection)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
