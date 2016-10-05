@@ -11,9 +11,18 @@ import numpy
 import sigopt
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
-from sklearn.grid_search import BaseSearchCV
-from sklearn.cross_validation import check_cv
-from sklearn.cross_validation import _fit_and_score
+
+# NOTE(Sam): This can be safely removed once we drop our support for scikit-learn versions less than 0.18.
+try:
+    # For scikit-learn >= 0.18
+    from sklearn.model_selection import check_cv
+    from sklearn.model_selection._search import BaseSearchCV
+    from sklearn.model_selection._validation import _fit_and_score
+except ImportError:
+    # For scikit-learn < 0.18
+    from sklearn.grid_search import BaseSearchCV
+    from sklearn.cross_validation import check_cv, _fit_and_score
+
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
 from sklearn.base import is_classifier, clone
