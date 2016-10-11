@@ -7,7 +7,6 @@ import sys
 import time
 
 import collections
-import numpy
 import sigopt
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
