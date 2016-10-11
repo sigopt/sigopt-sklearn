@@ -122,7 +122,7 @@ class TestSearch(object):
     for p in experiment_definition['parameters']:
       assert p in create_definition['parameters']
     assert len(conn.experiments().fetch.mock_calls) == 1
-    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter
-    assert len(conn.experiments().observations().create.mock_calls) == n_iter
+    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter * len(cv)
+    assert len(conn.experiments().observations().create.mock_calls) == n_iter * len(cv)
 
     assert cv.best_params_ == BEST_PARAMS
