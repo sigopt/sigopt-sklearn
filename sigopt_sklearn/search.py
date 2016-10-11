@@ -271,8 +271,6 @@ class SigOptSearchCV(BaseSearchCV):
                                  % (len(y), n_samples))
 
         cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
-        print("printEB cv")
-        print(cv)
 
         base_estimator = clone(self.estimator)
         pre_dispatch = self.pre_dispatch
@@ -333,8 +331,6 @@ class SigOptSearchCV(BaseSearchCV):
                  obs_timed_out = True
 
             if not obs_timed_out:
-                print("printEB out")
-                print([o[0] for o in out])
                 # grab scores from results
                 for sidx, suggestion in enumerate(suggestions):
                     score = out[sidx][0]
