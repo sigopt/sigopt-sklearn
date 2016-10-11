@@ -172,7 +172,7 @@ class SigOptSearchCV(BaseSearchCV):
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
-    def _create_sigopt_exp(self, conn):
+    def _create_sigopt_exp(self, conn, folds):
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
         if len(exp_name) > 50:
@@ -219,7 +219,9 @@ class SigOptSearchCV(BaseSearchCV):
         # create sigopt experiment
         self.experiment = conn.experiments().create(
             name=exp_name,
-            parameters=parameters)
+            parameters=parameters,
+            type='cross_validated',
+            folds=folds)
 
         if self.verbose > 0:
             exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)
@@ -269,12 +271,15 @@ class SigOptSearchCV(BaseSearchCV):
                                  % (len(y), n_samples))
 
         cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
+        print("printEB cv")
+        print(cv)
 
         base_estimator = clone(self.estimator)
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp(self.sigopt_connection)
+        n_folds = len(cv)
+        self._create_sigopt_exp(self.sigopt_connection, n_folds)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
@@ -289,19 +294,21 @@ class SigOptSearchCV(BaseSearchCV):
                 # break out of loop and refit model with best params so far
                 break
 
-            parameter_configs = []
             suggestions = []
+            jobs = []
             for _ in range(self.n_sug):
-                suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
-                parameters = suggestion.assignments.to_json()
-                parameters = self._convert_unicode(parameters)
-                # automatically convert __log__ params
-                parameters = self._convert_log_params(parameters)
-                parameter_configs.append(parameters)
-                suggestions.append(suggestion)
+                for train, test in cv:
+                    suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
+                    parameters = suggestion.assignments.to_json()
+                    parameters = self._convert_unicode(parameters)
+                    # automatically convert __log__ params
+                    parameters = self._convert_log_params(parameters)
+                    suggestions.append(suggestion)
+                    jobs.append([parameters, train, test])
 
             if self.verbose > 0:
-                print('Evaluating params : ', parameter_configs)
+                print('Evaluating params : ', [job[0] for job in jobs])
+
 
             # do CV folds in parallel using joblib
             # returns scores on test set
@@ -321,21 +328,19 @@ class SigOptSearchCV(BaseSearchCV):
                                             self.fit_params,
                                             return_parameters=True,
                                             error_score=self.error_score)
-                        for parameters in parameter_configs
-                        for train, test in cv)
+                        for parameters, train, test in jobs)
             except TimeoutError:
                  obs_timed_out = True
 
             if not obs_timed_out:
+                print("printEB out")
+                print([o[0] for o in out])
                 # grab scores from results
-                n_folds = len(cv)
                 for sidx, suggestion in enumerate(suggestions):
-                    out_sidx = n_folds * sidx
-                    scores = [o[0] for o in out[out_sidx:(out_sidx+n_folds)]]
+                    score = out[sidx][0]
                     self.sigopt_connection.experiments(self.experiment.id).observations().create(
                         suggestion=suggestion.id,
-                        value=numpy.mean(scores),
-                        value_stddev=numpy.std(scores))
+                        value=score)
             else:
                 # obsevation timed out so report a failure
                 self.sigopt_connection.experiments(self.experiment.id).observations().create(
