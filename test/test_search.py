@@ -105,8 +105,9 @@ class TestSearch(object):
       )),
     ))
     n_iter = 5
+    folds = 3
     cv = SigOptSearchCV(estimator=estimator, param_domains=param_domains,
-                        client_token='client_token', n_iter=n_iter)
+                        client_token='client_token', n_iter=n_iter, cv=folds)
     assert len(conn.experiments().create.mock_calls) == 0
     assert len(conn.experiments().fetch.mock_calls) == 0
     assert len(conn.experiments().suggestions.create.mock_calls) == 0
@@ -122,7 +123,7 @@ class TestSearch(object):
     for p in experiment_definition['parameters']:
       assert p in create_definition['parameters']
     assert len(conn.experiments().fetch.mock_calls) == 1
-    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter * len(cv)
-    assert len(conn.experiments().observations().create.mock_calls) == n_iter * len(cv)
+    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter * folds
+    assert len(conn.experiments().observations().create.mock_calls) == n_iter * folds
 
     assert cv.best_params_ == BEST_PARAMS
