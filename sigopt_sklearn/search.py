@@ -343,7 +343,7 @@ class SigOptSearchCV(BaseSearchCV):
                     failed=True)
 
         # return best SigOpt observation so far
-        best_obs = self.sigopt_connection.experiments(self.experiment.id).fetch().progress.best_observation
+        best_obs = self.sigopt_connection.experiments(self.experiment.id).progress().fetch().data[0]
         self.best_params_ = best_obs.assignments.to_json()
         # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode(self.best_params_)
