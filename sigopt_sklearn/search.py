@@ -172,7 +172,15 @@ class SigOptSearchCV(BaseSearchCV):
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
-    def _create_sigopt_exp(self, conn):
+    def create_experiment(self):
+        """Create the SigOpt experiment. You can use this to automatically create a SigOpt experiment with all of the
+        necessary parameters for a scikit-learn model. The created experiment will also be used when calling `fit`. If
+        you want to re-use an experiment check out the `experiment` keyword argument of `__init__`.
+
+        Returns
+        -------
+        experiment : sigopt.interface.Experiment
+        """
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
         if len(exp_name) > 50:
@@ -217,7 +225,7 @@ class SigOptSearchCV(BaseSearchCV):
             parameters.append(param_dict)
 
         # create sigopt experiment
-        experiment = conn.experiments().create(
+        experiment = self.sigopt_connection.experiments().create(
             name=exp_name,
             parameters=parameters)
 
@@ -277,7 +285,7 @@ class SigOptSearchCV(BaseSearchCV):
 
         # setup SigOpt experiment and run optimization
         if self.experiment is None:
-            self.experiment = self._create_sigopt_exp(self.sigopt_connection)
+            self.experiment = self.create_experiment()
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
@@ -367,6 +375,7 @@ class SigOptSearchCV(BaseSearchCV):
     def fit(self, X, y=None):
         """
         Run fit on the estimator with parameters chosen sequentially by SigOpt.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
