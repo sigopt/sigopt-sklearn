@@ -342,13 +342,19 @@ class SigOptSearchCV(BaseSearchCV):
                     suggestion=suggestion.id,
                     failed=True)
 
-        # return best SigOpt observation so far
-        best_obs = self.sigopt_connection.experiments(self.experiment.id).progress().fetch().data[0]
-        self.best_params_ = best_obs.assignments.to_json()
+        # return best SigOpt assignments so far
+        best_assignments = self.sigopt_connection.experiments(self.experiment.id).best_assignments().fetch().data
+
+        if not best_assignments:
+            raise RuntimeError(
+                'No valid observations found. '
+                'Make sure opt_timeout and cv_timeout provide sufficient time for observations to be reported.')
+
+        self.best_params_ = best_assignments[0].assignments.to_json()
         # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode(self.best_params_)
         self.best_params_ = self._convert_log_params(self.best_params_)
-        self.best_score_ = best_obs.value
+        self.best_score_ = best_assignments[0].value
 
         if self.refit:
             # fit the best estimator using the entire dataset
