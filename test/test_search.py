@@ -122,7 +122,7 @@ class TestSearch(object):
     assert len(create_definition['parameters']) == len(experiment_definition['parameters'])
     for p in experiment_definition['parameters']:
       assert p in create_definition['parameters']
-    assert len(conn.experiments().fetch.mock_calls) == 1
+    assert len(conn.experiments().best_assignments().fetch.mock_calls) == 1
     assert len(conn.experiments().suggestions().create.mock_calls) == n_iter * folds
     assert len(conn.experiments().observations().create.mock_calls) == n_iter * folds
 
