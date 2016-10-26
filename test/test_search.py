@@ -103,6 +103,15 @@ class TestSearch(object):
           value=52,
         )),
       )),
+      best_assignments=MagicMock(return_value=MagicMock(
+        fetch=MagicMock(return_value=MagicMock(
+          data=[MagicMock(return_value=MagickMock(
+            assignments=MagicMock(
+              to_json=MagicMock(return_value=BEST_PARAMS),
+            )
+          ))],
+        )),
+      )),
     ))
     n_iter = 5
     folds = 3
