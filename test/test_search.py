@@ -109,7 +109,7 @@ class TestSearch(object):
             assignments=MagicMock(
               to_json=MagicMock(return_value=BEST_PARAMS),
             )
-          ))],
+          )],
         )),
       )),
     ))
