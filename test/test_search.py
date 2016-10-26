@@ -105,7 +105,7 @@ class TestSearch(object):
       )),
       best_assignments=MagicMock(return_value=MagicMock(
         fetch=MagicMock(return_value=MagicMock(
-          data=[MagicMock(return_value=MagicMock(
+          data=[MagicMock(
             assignments=MagicMock(
               to_json=MagicMock(return_value=BEST_PARAMS),
             )
