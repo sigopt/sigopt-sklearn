@@ -76,13 +76,13 @@ client_token = "<YOUR_SIGOPT_CLIENT_TOKEN>"
 iris = datasets.load_iris()
 
 xgb_params = {
- 'learning_rate' : [0.01, 0.5],
- 'n_estimators' :  [10, 50],
- 'max_depth':[3, 10],
- 'min_child_weight':[6, 12],
- 'gamma':[0, 0.5],
- 'subsample':[0.6, 1.0],
- 'colsample_bytree':[0.6, 1.0]
+ 'learning_rate': [0.01, 0.5],
+ 'n_estimators': [10, 50],
+ 'max_depth': [3, 10],
+ 'min_child_weight': [6, 12],
+ 'gamma': [0, 0.5],
+ 'subsample': [0.6, 1.0],
+ 'colsample_bytree': [0.6, 1.0]
 }
 
 xgbc = XGBClassifier()
