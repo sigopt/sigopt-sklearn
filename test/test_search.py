@@ -1,99 +1,100 @@
 from mock import MagicMock, patch
 import pytest
 
-from sklearn.ensemble import GradientBoostingClassifier
 import sklearn.datasets
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neural_network import MLPRegressor
+
 import sigopt
 
 from sigopt_sklearn.search import SigOptSearchCV
 
+from test_util import random_assignments
 
-class TestSearch(object):
-  @pytest.fixture(params=[
-    (GradientBoostingClassifier, {
-      'n_estimators': [20, 500],
-      'min_samples_split': [1, 4],
-      'min_samples_leaf': [1, 3],
-      'learning_rate': [0.01, 1.0],
-    }, {
-      'name': 'GradientBoostingClassifier (sklearn)',
-      'parameters': [
-        {
-          'type': 'int',
-          'name': 'n_estimators',
-          'bounds': {
-            'min': 20,
-            'max': 500,
-          },
-        },
-        {
-          'type': 'int',
-          'name': 'min_samples_split',
-          'bounds': {
-            'min': 1,
-            'max': 4,
-          },
-        },
-        {
-          'type': 'int',
-          'name': 'min_samples_leaf',
-          'bounds': {
-            'min': 1,
-            'max': 3,
-          },
-        },
-        {
-          'type': 'double',
-          'name': 'learning_rate',
-          'bounds': {
-            'min': 0.01,
-            'max': 1.0,
-          },
-        },
-      ],
-    }),
-  ])
-  def estimator_params_experiment(self, request):
-    return request.param
 
-  def to_sample_params(self, param_domains):
-    return dict(((p[0], p[1][0]) for p in param_domains.items()))
+GradientBoostingClassifier_PARAM_DOMAIN = {
+  'n_estimators': (20, 500),
+  'min_samples_split': (1, 4),
+  'min_samples_leaf': (1, 3),
+  'learning_rate': (0.01, 1.0)
+}
+GradientBoostingClassifier_EXPERIMENT_DEF = {
+  'name': 'GradientBoostingClassifier (sklearn)',
+  'parameters': [
+    {
+      'type': 'int',
+      'name': 'n_estimators',
+      'bounds': {
+        'min': 20,
+        'max': 500,
+      },
+    },
+    {
+      'type': 'int',
+      'name': 'min_samples_split',
+      'bounds': {
+        'min': 1,
+        'max': 4,
+      },
+    },
+    {
+      'type': 'int',
+      'name': 'min_samples_leaf',
+      'bounds': {
+        'min': 1,
+        'max': 3,
+      },
+    },
+    {
+      'type': 'double',
+      'name': 'learning_rate',
+      'bounds': {
+        'min': 0.01,
+        'max': 1.0,
+      },
+    },
+  ],
+}
 
-  @pytest.fixture
-  def param_domains(self, estimator_params_experiment):
-    return estimator_params_experiment[1]
+MLPRegressor_PARAM_DOMAIN = {
+  'hidden_layer_sizes': {'5': (5,), '5,4,3': (5, 4, 3)}
+}
+MLPRegressor_EXPERIMENT_DEF = {
+  'name': 'MLPRegressor with fancy categoricals',
+  'parameters': [
+    {
+      'type': 'categorical',
+      'name': 'hidden_layer_sizes',
+      'categorical_values': [
+        {'name': '5'},
+        {'name': '5,4,3'}
+      ]
+    }
+  ]
+}
 
-  @pytest.fixture
-  def estimator(self, estimator_params_experiment, param_domains):
-    estimator_cls = estimator_params_experiment[0]
-    return estimator_cls(**self.to_sample_params(param_domains))
+def zero_corner(experiment_definition):
+  """Take the parameters corresponding to the zero corner. All of the minimums and the first categories."""
+  return {p['name']: (p['bounds']['min'] if p['type'] in ['int', 'double'] else p['categorical_values'][0]['name'])
+          for p in experiment_definition['parameters']}
 
-  @pytest.fixture
-  def experiment_definition(self, estimator_params_experiment):
-    return estimator_params_experiment[2]
-
-  def test_create(self, estimator, param_domains):
-    SigOptSearchCV(estimator=estimator, param_domains=param_domains, client_token='client_token')
-
-  def test_no_token(self, estimator, param_domains):
-    with pytest.raises(ValueError):
-      SigOptSearchCV(estimator=estimator, param_domains=param_domains)
-
-  @patch('sigopt.Connection')
-  def test_search(self, Connection, estimator, param_domains, experiment_definition):
-    BEST_PARAMS = self.to_sample_params(param_domains)
-    conn = sigopt.Connection()
-    conn.experiments = MagicMock(return_value=MagicMock(
+def mock_connection(experiment_definition):
+  return MagicMock(return_value=MagicMock(
+    experiments=MagicMock(return_value=MagicMock(
       create=MagicMock(return_value=MagicMock(
         id="exp_id",
       )),
       fetch=MagicMock(return_value=MagicMock(
-        progress=MagicMock(best_observation=MagicMock(assignments=MagicMock(
-          to_json=MagicMock(return_value=BEST_PARAMS),
+        progress=MagicMock(
+          best_observation=MagicMock(
+            assignments=MagicMock(
+              to_json=MagicMock(return_value=zero_corner(experiment_definition)),
         ))),
       )),
       suggestions=MagicMock(return_value=MagicMock(
         create=MagicMock(return_value=MagicMock(
+          assignments=MagicMock(
+            to_json=MagicMock(side_effect=lambda: random_assignments(experiment_definition))),
           id="sugg_id",
         )),
       )),
@@ -104,25 +105,107 @@ class TestSearch(object):
         )),
       )),
     ))
+  ))
+
+class TestSearch(object):
+  def test_create(self):
+    SigOptSearchCV(
+      estimator=GradientBoostingClassifier,
+      param_domains=GradientBoostingClassifier_PARAM_DOMAIN,
+      client_token='client_token'
+    )
+
+  def test_no_token(self):
+    with pytest.raises(ValueError):
+      SigOptSearchCV(estimator=GradientBoostingClassifier, param_domains=GradientBoostingClassifier_PARAM_DOMAIN)
+
+  @patch('sigopt.Connection', new=mock_connection(GradientBoostingClassifier_EXPERIMENT_DEF))
+  def test_search(self):
+    conn = sigopt.Connection()
+
     n_iter = 5
-    cv = SigOptSearchCV(estimator=estimator, param_domains=param_domains,
-                        client_token='client_token', n_iter=n_iter)
+    cv = SigOptSearchCV(
+      estimator=GradientBoostingClassifier(),
+      param_domains=GradientBoostingClassifier_PARAM_DOMAIN,
+      client_token='client_token',
+      n_iter=n_iter
+    )
     assert len(conn.experiments().create.mock_calls) == 0
     assert len(conn.experiments().fetch.mock_calls) == 0
     assert len(conn.experiments().suggestions.create.mock_calls) == 0
     assert len(conn.experiments().observations.create.mock_calls) == 0
 
-    data = sklearn.datasets.load_digits()
+    data = sklearn.datasets.load_iris()
     cv.fit(data['data'], data['target'])
     assert len(conn.experiments().create.mock_calls) == 1
     create_definition = conn.experiments().create.call_args[1]
-    assert create_definition['name'] == experiment_definition['name']
+    assert create_definition['name'] == GradientBoostingClassifier_EXPERIMENT_DEF['name']
 
-    assert len(create_definition['parameters']) == len(experiment_definition['parameters'])
-    for p in experiment_definition['parameters']:
+    assert len(create_definition['parameters']) == len(GradientBoostingClassifier_EXPERIMENT_DEF['parameters'])
+    for p in GradientBoostingClassifier_EXPERIMENT_DEF['parameters']:
       assert p in create_definition['parameters']
     assert len(conn.experiments().fetch.mock_calls) == 1
     assert len(conn.experiments().suggestions().create.mock_calls) == n_iter
     assert len(conn.experiments().observations().create.mock_calls) == n_iter
 
-    assert cv.best_params_ == BEST_PARAMS
+    assert cv.best_params_ == zero_corner(GradientBoostingClassifier_EXPERIMENT_DEF)
+
+  @patch('sigopt.Connection', new=mock_connection(MLPRegressor_EXPERIMENT_DEF))
+  def test_non_string_categorical(self):
+    X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
+    clf = SigOptSearchCV(MLPRegressor(), MLPRegressor_PARAM_DOMAIN, client_token='client_token', n_iter=5)
+    clf.fit(X, Y)
+
+  @patch('sigopt.Connection', new=mock_connection(MLPRegressor_EXPERIMENT_DEF))
+  def test_bad_param_range1(self):
+    with pytest.raises(Exception):
+      X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
+      clf = SigOptSearchCV(
+        MLPRegressor(),
+        {
+          'bad_param_range': (1,),
+          'hidden_layer_sizes': {'5': (5,), '5,4,3': (5, 4, 3)}
+        },
+        client_token='client_token',
+        n_iter=5
+      )
+      clf.fit(X, Y)
+
+  @patch('sigopt.Connection', new=mock_connection(MLPRegressor_EXPERIMENT_DEF))
+  def test_bad_param_range2(self):
+    with pytest.raises(Exception):
+      X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
+      clf = SigOptSearchCV(
+        MLPRegressor(),
+        {
+          'bad_param_range': (1, 2, 3),
+          'hidden_layer_sizes': {'5': (5,), '5,4,3': (5, 4, 3)}
+        },
+        client_token='client_token',
+        n_iter=5
+      )
+      clf.fit(X, Y)
+
+  @patch('sigopt.Connection', new=mock_connection({
+    'name': 'list warning',
+    'parameters': [
+      {
+        'type': 'int',
+        'name': 'max_iter',
+        'bounds': {
+          'min': 5,
+          'max': 10
+        }
+      }
+    ]
+  }))
+  def test_warn_param_range_list(self):
+    with pytest.warns(UserWarning):
+      X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
+      clf = SigOptSearchCV(
+        MLPRegressor(),
+        {'max_iter': [5, 10]},
+        client_token='client_token',
+        n_iter=5
+      )
+      clf.fit(X, Y)
