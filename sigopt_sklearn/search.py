@@ -176,16 +176,7 @@ class SigOptSearchCV(BaseSearchCV):
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
-    def _create_sigopt_exp(self, conn):
-        est_name = self.estimator.__class__.__name__
-        exp_name = est_name + ' (sklearn)'
-        # NOTE(Sam): This is not actually safe. There's no reason to believe that len(est_name) <= 50 in general.
-        if len(exp_name) > 50:
-            exp_name = est_name
-
-        if self.verbose > 0:
-            print('Creating SigOpt experiment: ', exp_name)
-
+    def _transform_param_domains(self, param_domains):
         def _transform_param(param_name, param_bounds):
             """Transform a parameter name and its bounds into a form that can be sent to the API layer."""
             def _check_bounds():
@@ -195,6 +186,11 @@ class SigOptSearchCV(BaseSearchCV):
                                     .format(param_bounds))
                 if not isinstance(param_bounds, tuple):
                     warnings.warn('Parameter bounds should be specified as a tuple in the form (min, max).')
+
+            # Check that param bounds is either iterable (range/categoricals) or a dict (categoricals)
+            if not (isinstance(param_bounds, collections.Iterable) or isinstance(param_bounds, dict)):
+              raise Exception('Parameter bounds must be iterable or dicts! The range {} isn\'t friendly!'
+                              .format(param_bounds))
 
             param_dict = {'name': param_name}
             if isinstance(param_bounds, dict):
@@ -230,12 +226,22 @@ class SigOptSearchCV(BaseSearchCV):
             return param_dict
 
         # generate sigopt experiment parameters
-        parameters = [_transform_param(name, bounds) for (name, bounds) in self.param_domains.iteritems()]
+        return [_transform_param(name, bounds) for (name, bounds) in param_domains.iteritems()]
+
+    def _create_sigopt_exp(self, conn):
+        est_name = self.estimator.__class__.__name__
+        exp_name = est_name + ' (sklearn)'
+        # NOTE(Sam): This is not actually safe. There's no reason to believe that len(est_name) <= 50 in general.
+        if len(exp_name) > 50:
+            exp_name = est_name
+
+        if self.verbose > 0:
+            print('Creating SigOpt experiment: ', exp_name)
 
         # create sigopt experiment
         self.experiment = conn.experiments().create(
             name=exp_name,
-            parameters=parameters)
+            parameters=self._transform_param_domains(self.param_domains))
 
         if self.verbose > 0:
             exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)

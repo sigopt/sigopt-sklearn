@@ -156,10 +156,8 @@ class TestSearch(object):
     clf = SigOptSearchCV(MLPRegressor(), MLPRegressor_PARAM_DOMAIN, client_token='client_token', n_iter=5)
     clf.fit(X, Y)
 
-  @patch('sigopt.Connection', new=mock_connection(MLPRegressor_EXPERIMENT_DEF))
   def test_bad_param_range1(self):
     with pytest.raises(Exception):
-      X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
       clf = SigOptSearchCV(
         MLPRegressor(),
         {
@@ -169,12 +167,10 @@ class TestSearch(object):
         client_token='client_token',
         n_iter=5
       )
-      clf.fit(X, Y)
+      clf._transform_param_domains(clf.param_domains)
 
-  @patch('sigopt.Connection', new=mock_connection(MLPRegressor_EXPERIMENT_DEF))
   def test_bad_param_range2(self):
     with pytest.raises(Exception):
-      X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
       clf = SigOptSearchCV(
         MLPRegressor(),
         {
@@ -184,28 +180,24 @@ class TestSearch(object):
         client_token='client_token',
         n_iter=5
       )
-      clf.fit(X, Y)
+      clf._transform_param_domains(clf.param_domains)
 
-  @patch('sigopt.Connection', new=mock_connection({
-    'name': 'list warning',
-    'parameters': [
-      {
-        'type': 'int',
-        'name': 'max_iter',
-        'bounds': {
-          'min': 5,
-          'max': 10
-        }
-      }
-    ]
-  }))
   def test_warn_param_range_list(self):
     with pytest.warns(UserWarning):
-      X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
       clf = SigOptSearchCV(
         MLPRegressor(),
         {'max_iter': [5, 10]},
         client_token='client_token',
         n_iter=5
       )
-      clf.fit(X, Y)
+      clf._transform_param_domains(clf.param_domains)
+
+  def test_bad_param_range_not_iterable(self):
+    with pytest.raises(Exception):
+      clf = SigOptSearchCV(
+        MLPRegressor(),
+        {'max_iter': 15},
+        client_token='client_token',
+        n_iter=5
+      )
+      clf._transform_param_domains(clf.param_domains)
