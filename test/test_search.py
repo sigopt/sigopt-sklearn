@@ -105,6 +105,15 @@ def mock_connection(experiment_definition):
           value=52,
         )),
       )),
+      best_assignments=MagicMock(return_value=MagicMock(
+        fetch=MagicMock(return_value=MagicMock(
+          data=[MagicMock(
+            assignments=MagicMock(
+              to_json=MagicMock(return_value=zero_corner(experiment_definition)),
+            )
+          )],
+        )),
+      )),
     ))
   ))
 
@@ -125,11 +134,13 @@ class TestSearch(object):
     conn = sigopt.Connection()
 
     n_iter = 5
+    folds = 3
     cv = SigOptSearchCV(
       estimator=GradientBoostingClassifier(),
       param_domains=GradientBoostingClassifier_PARAM_DOMAIN,
       client_token='client_token',
-      n_iter=n_iter
+      n_iter=n_iter,
+      cv=folds
     )
     assert len(conn.experiments().create.mock_calls) == 0
     assert len(conn.experiments().fetch.mock_calls) == 0
@@ -145,9 +156,9 @@ class TestSearch(object):
     assert len(create_definition['parameters']) == len(GradientBoostingClassifier_EXPERIMENT_DEF['parameters'])
     for p in GradientBoostingClassifier_EXPERIMENT_DEF['parameters']:
       assert p in create_definition['parameters']
-    assert len(conn.experiments().fetch.mock_calls) == 1
-    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter
-    assert len(conn.experiments().observations().create.mock_calls) == n_iter
+    assert len(conn.experiments().best_assignments().fetch.mock_calls) == 1
+    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter * folds
+    assert len(conn.experiments().observations().create.mock_calls) == n_iter * folds
 
     assert cv.best_params_ == zero_corner(GradientBoostingClassifier_EXPERIMENT_DEF)
 

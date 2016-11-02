@@ -8,7 +8,6 @@ import time
 import warnings
 
 import collections
-import numpy
 import sigopt
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
@@ -228,7 +227,7 @@ class SigOptSearchCV(BaseSearchCV):
         # generate sigopt experiment parameters
         return [_transform_param(name, bounds) for (name, bounds) in param_domains.items()]
 
-    def _create_sigopt_exp(self, conn):
+    def _create_sigopt_exp(self, conn, folds):
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
         # NOTE(Sam): This is not actually safe. There's no reason to believe that len(est_name) <= 50 in general.
@@ -241,7 +240,10 @@ class SigOptSearchCV(BaseSearchCV):
         # create sigopt experiment
         self.experiment = conn.experiments().create(
             name=exp_name,
-            parameters=self._transform_param_domains(self.param_domains))
+            parameters=self._transform_param_domains(self.param_domains),
+            type='cross_validated',
+            folds=folds
+        )
 
         if self.verbose > 0:
             exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)
@@ -301,7 +303,8 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp(self.sigopt_connection)
+        n_folds = len(cv)
+        self._create_sigopt_exp(self.sigopt_connection, n_folds)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
@@ -316,20 +319,21 @@ class SigOptSearchCV(BaseSearchCV):
                 # break out of loop and refit model with best params so far
                 break
 
-            parameter_configs = []
             suggestions = []
+            jobs = []
             for _ in range(self.n_sug):
-                suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
-                parameters = suggestion.assignments.to_json()
-                assert set(parameters.keys()) == set(self.param_domains.keys())
-                parameters = self._convert_unicode(parameters)
-                parameters = self._convert_log_params(parameters)
-                parameters = self._convert_nonstring_categoricals(parameters)
-                parameter_configs.append(parameters)
-                suggestions.append(suggestion)
+                for train, test in cv:
+                    suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
+                    parameters = suggestion.assignments.to_json()
+                    parameters = self._convert_unicode(parameters)
+                    parameters = self._convert_log_params(parameters)
+                    parameters = self._convert_nonstring_categoricals(parameters)
+                    suggestions.append(suggestion)
+                    jobs.append([parameters, train, test])
 
             if self.verbose > 0:
-                print('Evaluating params : ', parameter_configs)
+                print('Evaluating params : ', [job[0] for job in jobs])
+
 
             # do CV folds in parallel using joblib
             # returns scores on test set
@@ -349,35 +353,37 @@ class SigOptSearchCV(BaseSearchCV):
                                             self.fit_params,
                                             return_parameters=True,
                                             error_score=self.error_score)
-                        for parameters in parameter_configs
-                        for train, test in cv)
+                        for parameters, train, test in jobs)
             except TimeoutError:
                  obs_timed_out = True
 
             if not obs_timed_out:
                 # grab scores from results
-                n_folds = len(cv)
                 for sidx, suggestion in enumerate(suggestions):
-                    out_sidx = n_folds * sidx
-                    scores = [o[0] for o in out[out_sidx:(out_sidx+n_folds)]]
+                    score = out[sidx][0]
                     self.sigopt_connection.experiments(self.experiment.id).observations().create(
                         suggestion=suggestion.id,
-                        value=numpy.mean(scores),
-                        value_stddev=numpy.std(scores))
+                        value=score)
             else:
                 # obsevation timed out so report a failure
                 self.sigopt_connection.experiments(self.experiment.id).observations().create(
                     suggestion=suggestion.id,
                     failed=True)
 
-        # return best SigOpt observation so far
-        best_obs = self.sigopt_connection.experiments(self.experiment.id).fetch().progress.best_observation
-        self.best_params_ = best_obs.assignments.to_json()
+        # return best SigOpt assignments so far
+        best_assignments = self.sigopt_connection.experiments(self.experiment.id).best_assignments().fetch().data
+
+        if not best_assignments:
+            raise RuntimeError(
+                'No valid observations found. '
+                'Make sure opt_timeout and cv_timeout provide sufficient time for observations to be reported.')
+
+        self.best_params_ = best_assignments[0].assignments.to_json()
         # convert all unicode names and values to plain strings
         self.best_params_ = self._convert_unicode(self.best_params_)
         self.best_params_ = self._convert_log_params(self.best_params_)
         self.best_params_ = self._convert_nonstring_categoricals(self.best_params_)
-        self.best_score_ = best_obs.value
+        self.best_score_ = best_assignments[0].value
 
         if self.refit:
             # fit the best estimator using the entire dataset
