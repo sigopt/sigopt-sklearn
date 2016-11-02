@@ -226,7 +226,7 @@ class SigOptSearchCV(BaseSearchCV):
             return param_dict
 
         # generate sigopt experiment parameters
-        return [_transform_param(name, bounds) for (name, bounds) in param_domains.iteritems()]
+        return [_transform_param(name, bounds) for (name, bounds) in param_domains.items()]
 
     def _create_sigopt_exp(self, conn):
         est_name = self.estimator.__class__.__name__
@@ -255,7 +255,7 @@ class SigOptSearchCV(BaseSearchCV):
       elif isinstance(data, basestring):
         return str(data)
       elif isinstance(data, collections.Mapping):
-        return dict(map(self._convert_unicode, data.iteritems()))
+        return dict(map(self._convert_unicode, data.items()))
       elif isinstance(data, collections.Iterable):
         return type(data)(map(self._convert_unicode, data))
       else:
@@ -276,7 +276,7 @@ class SigOptSearchCV(BaseSearchCV):
     def _convert_nonstring_categoricals(self, param_dict):
         """Apply the self.categorical_mappings_ mappings where necessary."""
         return {name: (self.categorical_mappings_[name][val] if name in self.categorical_mappings_ else val)
-                for (name, val) in param_dict.iteritems()}
+                for (name, val) in param_dict.items()}
 
     def _fit(self, X, y, parameter_iterable=None):
         if parameter_iterable is not None:
