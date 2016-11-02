@@ -3,7 +3,7 @@ import pytest
 
 import sklearn.datasets
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.neural_network import MLPRegressor
+from sklearn.svm import SVC
 
 import sigopt
 
@@ -56,18 +56,19 @@ GradientBoostingClassifier_EXPERIMENT_DEF = {
   ],
 }
 
-MLPRegressor_PARAM_DOMAIN = {
-  'hidden_layer_sizes': {'5': (5,), '5,4,3': (5, 4, 3)}
+SVC_PARAM_DOMAIN = {
+  'C': {'little': 1e-3, 'some': 1, 'lots': 1e3}
 }
-MLPRegressor_EXPERIMENT_DEF = {
-  'name': 'MLPRegressor with fancy categoricals',
+SVC_EXPERIMENT_DEF = {
+  'name': 'SVC with fancy categoricals',
   'parameters': [
     {
       'type': 'categorical',
-      'name': 'hidden_layer_sizes',
+      'name': 'C',
       'categorical_values': [
-        {'name': '5'},
-        {'name': '5,4,3'}
+        {'name': 'little'},
+        {'name': 'some'},
+        {'name': 'lots'}
       ]
     }
   ]
@@ -150,16 +151,16 @@ class TestSearch(object):
 
     assert cv.best_params_ == zero_corner(GradientBoostingClassifier_EXPERIMENT_DEF)
 
-  @patch('sigopt.Connection', new=mock_connection(MLPRegressor_EXPERIMENT_DEF))
+  @patch('sigopt.Connection', new=mock_connection(SVC_EXPERIMENT_DEF))
   def test_non_string_categorical(self):
-    X, Y = sklearn.datasets.make_swiss_roll(n_samples=10, noise=0.5)
-    clf = SigOptSearchCV(MLPRegressor(), MLPRegressor_PARAM_DOMAIN, client_token='client_token', n_iter=5)
-    clf.fit(X, Y)
+    data = sklearn.datasets.load_iris()
+    clf = SigOptSearchCV(SVC(), SVC_PARAM_DOMAIN, client_token='client_token', n_iter=5)
+    clf.fit(data['data'], data['target'])
 
   def test_bad_param_range1(self):
     with pytest.raises(Exception):
       clf = SigOptSearchCV(
-        MLPRegressor(),
+        SVC(),
         {
           'bad_param_range': (1,),
           'hidden_layer_sizes': {'5': (5,), '5,4,3': (5, 4, 3)}
@@ -172,7 +173,7 @@ class TestSearch(object):
   def test_bad_param_range2(self):
     with pytest.raises(Exception):
       clf = SigOptSearchCV(
-        MLPRegressor(),
+        SVC(),
         {
           'bad_param_range': (1, 2, 3),
           'hidden_layer_sizes': {'5': (5,), '5,4,3': (5, 4, 3)}
@@ -185,7 +186,7 @@ class TestSearch(object):
   def test_warn_param_range_list(self):
     with pytest.warns(UserWarning):
       clf = SigOptSearchCV(
-        MLPRegressor(),
+        SVC(),
         {'max_iter': [5, 10]},
         client_token='client_token',
         n_iter=5
@@ -195,7 +196,7 @@ class TestSearch(object):
   def test_bad_param_range_not_iterable(self):
     with pytest.raises(Exception):
       clf = SigOptSearchCV(
-        MLPRegressor(),
+        SVC(),
         {'max_iter': 15},
         client_token='client_token',
         n_iter=5
