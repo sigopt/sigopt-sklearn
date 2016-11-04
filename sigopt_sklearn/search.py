@@ -5,6 +5,7 @@ import os
 from multiprocessing import TimeoutError
 import sys
 import time
+import warnings
 
 import collections
 import sigopt
@@ -16,7 +17,6 @@ from sklearn.cross_validation import _fit_and_score
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
 from sklearn.base import is_classifier, clone
-
 
 HANDLES_UNICODE = sys.version_info[0] >= 3
 
@@ -149,6 +149,10 @@ class SigOptSearchCV(BaseSearchCV):
         self.opt_timeout = opt_timeout
         self.verbose = verbose
 
+        # Stores the mappings between categorical strings to Python values. The keys correspond to parameter names and
+        # values correspond to the string-to-value mappings themselves.
+        self.categorical_mappings_ = {}
+
         self.scorer_ = None
         self.best_params_ = None
         self.best_score_ = None
@@ -171,56 +175,75 @@ class SigOptSearchCV(BaseSearchCV):
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
+    def _transform_param_domains(self, param_domains):
+        def _transform_param(param_name, param_bounds):
+            """Transform a parameter name and its bounds into a form that can be sent to the API layer."""
+            def _check_bounds():
+                """Check that min/max bounds are well formed."""
+                if len(param_bounds) != 2:
+                    raise Exception('Parameter bounds must be specified with two numbers! Not sure what to do with {}.'
+                                    .format(param_bounds))
+                if not isinstance(param_bounds, tuple):
+                    warnings.warn('Parameter bounds should be specified as a tuple in the form (min, max).')
+
+            # Check that param bounds is either iterable (range/categoricals) or a dict (categoricals)
+            if not (isinstance(param_bounds, collections.Iterable) or isinstance(param_bounds, dict)):
+              raise Exception('Parameter bounds must be iterable or dicts! The range {} isn\'t friendly!'
+                              .format(param_bounds))
+
+            param_dict = {'name': param_name}
+            if isinstance(param_bounds, dict):
+                # This is a categorical with mappings between strings and values
+                param_dict['type'] = 'categorical'
+                param_dict['categorical_values'] = [{'name': k} for k in param_bounds.keys()]
+
+                # Add this mapping to our set of categorical string mappings
+                self.categorical_mappings_[param_name] = param_bounds
+
+            elif all(isinstance(x, str) for x in param_bounds):
+                # This is a categorical with a list of strings naming each category
+                param_dict['type'] = 'categorical'
+                param_dict['categorical_values'] = [{'name': k} for k in param_bounds]
+
+            elif all(isinstance(x, int) for x in param_bounds):
+                # This is an integer parameter
+                _check_bounds()
+                param_dict['type'] = 'int'
+                param_dict['bounds'] = {'min': param_bounds[0], 'max': param_bounds[1]}
+
+            elif any(isinstance(x, float) for x in param_bounds):
+                # This is a continuous parameter. Note that we use `any` since the user may pass some combination of
+                # float and integer parameters, e.g. (0, 0.1).
+                _check_bounds()
+                param_dict['type'] = 'double'
+                param_dict['bounds'] = {'min': param_bounds[0], 'max': param_bounds[1]}
+
+            else:
+                # Not sure what the user gave us here
+                raise Exception('Bad parameter range {}.'.format(param_bounds))
+
+            return param_dict
+
+        # generate sigopt experiment parameters
+        return [_transform_param(name, bounds) for (name, bounds) in param_domains.items()]
+
     def _create_sigopt_exp(self, conn, folds):
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
+        # NOTE(Sam): This is not actually safe. There's no reason to believe that len(est_name) <= 50 in general.
         if len(exp_name) > 50:
             exp_name = est_name
 
         if self.verbose > 0:
             print('Creating SigOpt experiment: ', exp_name)
 
-        # generate sigopt experiment parameters
-        parameters = []
-        for param_name in self.param_domains:
-            bounds = self.param_domains[param_name]
-            all_ints = all(isinstance(x, int) for x in bounds)
-            all_floats = all(isinstance(x, float) for x in bounds)
-            any_floats = any(isinstance(x, float) for x in bounds)
-            all_strings = all(isinstance(x, str) for x in bounds)
-
-            # convert entire bounds to floats if one is present
-            if any_floats:
-                bounds = [float(b) for b in bounds]
-                all_floats = True
-
-            types = ['double', 'int', 'categorical']
-            bound_types = [all_floats, all_ints, all_strings]
-            param_type = types[bound_types.index(True)]
-
-            param_dict = {}
-            param_dict['name'] = param_name
-            param_dict['type'] = param_type
-
-            if param_type == 'categorical':
-                cat_vals = []
-                for str_name in bounds:
-                    cat_vals.append({'name': str_name})
-                param_dict['categorical_values'] = cat_vals
-            else:
-                bmin = min(bounds)
-                bmax = max(bounds)
-                param_dict['bounds'] = {'min': bmin, 'max': bmax}
-
-            # add parameter definition to list
-            parameters.append(param_dict)
-
         # create sigopt experiment
         self.experiment = conn.experiments().create(
             name=exp_name,
-            parameters=parameters,
+            parameters=self._transform_param_domains(self.param_domains),
             type='cross_validated',
-            folds=folds)
+            folds=folds
+        )
 
         if self.verbose > 0:
             exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)
@@ -234,7 +257,7 @@ class SigOptSearchCV(BaseSearchCV):
       elif isinstance(data, basestring):
         return str(data)
       elif isinstance(data, collections.Mapping):
-        return dict(map(self._convert_unicode, data.iteritems()))
+        return dict(map(self._convert_unicode, data.items()))
       elif isinstance(data, collections.Iterable):
         return type(data)(map(self._convert_unicode, data))
       else:
@@ -251,6 +274,14 @@ class SigOptSearchCV(BaseSearchCV):
           pname = pname.replace('__log__', '')
         log_converted_dict[pname] = pval
       return log_converted_dict
+
+    def _convert_nonstring_categoricals(self, param_dict):
+        """Apply the self.categorical_mappings_ mappings where necessary."""
+        return {name: (self.categorical_mappings_[name][val] if name in self.categorical_mappings_ else val)
+                for (name, val) in param_dict.items()}
+
+    def _convert_sigopt_api_to_sklearn_assignments(self, param_dict):
+      return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
 
     def _fit(self, X, y, parameter_iterable=None):
         if parameter_iterable is not None:
@@ -296,10 +327,7 @@ class SigOptSearchCV(BaseSearchCV):
             for _ in range(self.n_sug):
                 for train, test in cv:
                     suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
-                    parameters = suggestion.assignments.to_json()
-                    parameters = self._convert_unicode(parameters)
-                    # automatically convert __log__ params
-                    parameters = self._convert_log_params(parameters)
+                    parameters = self._convert_sigopt_api_to_sklearn_assignments(suggestion.assignments.to_json())
                     suggestions.append(suggestion)
                     jobs.append([parameters, train, test])
 
@@ -350,10 +378,7 @@ class SigOptSearchCV(BaseSearchCV):
                 'No valid observations found. '
                 'Make sure opt_timeout and cv_timeout provide sufficient time for observations to be reported.')
 
-        self.best_params_ = best_assignments[0].assignments.to_json()
-        # convert all unicode names and values to plain strings
-        self.best_params_ = self._convert_unicode(self.best_params_)
-        self.best_params_ = self._convert_log_params(self.best_params_)
+        self.best_params_ = self._convert_sigopt_api_to_sklearn_assignments(best_assignments[0].assignments.to_json())
         self.best_score_ = best_assignments[0].value
 
         if self.refit:
