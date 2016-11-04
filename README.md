@@ -184,7 +184,7 @@ svr = svm.SVC()
 
 # SVM fitting can be quite slow, so we set timeout = 180 seconds
 # for each fit.  SigOpt will then avoid configurations that are too slow
-clf = SigOptSearchCV(svr, svc_parameters, cv=5, timeout=180,
+clf = SigOptSearchCV(svr, svc_parameters, cv=5, opt_timeout=180,
     client_token=client_token, n_jobs=5, n_iter=40)
 
 clf.fit(X, y)
@@ -219,7 +219,7 @@ parameters = {
   }
 }
 nn = MLPRegressor()
-clf = SigOptSearchCV(nn, parameters, cv=5, timeout=180,
+clf = SigOptSearchCV(nn, parameters, cv=5,
     client_token=client_token, n_jobs=5, n_iter=40)
 
 clf.fit(X, y)
