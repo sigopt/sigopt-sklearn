@@ -280,6 +280,9 @@ class SigOptSearchCV(BaseSearchCV):
         return {name: (self.categorical_mappings_[name][val] if name in self.categorical_mappings_ else val)
                 for (name, val) in param_dict.items()}
 
+    def _convert_sigopt_api_to_sklearn_assignments(self, param_dict):
+      return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
+
     def _fit(self, X, y, parameter_iterable=None):
         if parameter_iterable is not None:
             raise NotImplementedError('The parameter_iterable argument is not supported.')
@@ -324,10 +327,7 @@ class SigOptSearchCV(BaseSearchCV):
             for _ in range(self.n_sug):
                 for train, test in cv:
                     suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
-                    parameters = suggestion.assignments.to_json()
-                    parameters = self._convert_unicode(parameters)
-                    parameters = self._convert_log_params(parameters)
-                    parameters = self._convert_nonstring_categoricals(parameters)
+                    parameters = self._convert_sigopt_api_to_sklearn_assignments(suggestion.assignments.to_json())
                     suggestions.append(suggestion)
                     jobs.append([parameters, train, test])
 
@@ -378,11 +378,7 @@ class SigOptSearchCV(BaseSearchCV):
                 'No valid observations found. '
                 'Make sure opt_timeout and cv_timeout provide sufficient time for observations to be reported.')
 
-        self.best_params_ = best_assignments[0].assignments.to_json()
-        # convert all unicode names and values to plain strings
-        self.best_params_ = self._convert_unicode(self.best_params_)
-        self.best_params_ = self._convert_log_params(self.best_params_)
-        self.best_params_ = self._convert_nonstring_categoricals(self.best_params_)
+        self.best_params_ = self._convert_sigopt_api_to_sklearn_assignments(best_assignments[0].assignments.to_json())
         self.best_score_ = best_assignments[0].value
 
         if self.refit:
