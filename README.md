@@ -210,7 +210,7 @@ parameters = {
   }
 }
 nn = MLPRegressor()
-clf = SigOptSearchCV(nn, parameters, cv=5,
+clf = SigOptSearchCV(nn, parameters, cv=5, cv_timeout=240,
     client_token=client_token, n_jobs=5, n_iter=40)
 
 clf.fit(X, y)
