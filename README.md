@@ -183,13 +183,13 @@ clf.fit(X, y)
 
 ### Categoricals
 
-SigOptSearchCV supports categoricals specified as list of string as 'kernel' parameter is in the SVM example:
+SigOptSearchCV supports categorical parameters specified as list of string as the `kernel` parameter is in the SVM example:
 
 ```python
 svc_parameters  = {'kernel': ['linear', 'rbf'], 'C': (0.5, 100)}
 ```
 
-But SigOpt supports non-string categorical variables as well. For example the `hidden_layer_sizes` parameter 
+SigOpt also supports non-string valued categorical parameters. For example the `hidden_layer_sizes` parameter 
 in the MLPRegressor example below,
 
 ```python
