@@ -154,15 +154,6 @@ SigOptSearchCV performs evaluations on cv folds in parallel using joblib. Timeou
 branch of joblib and SigOpt can use this timeout information to learn to avoid hyperparameter configurations that are
 too slow.
 
-You'll need to install joblib from source for this example to work.
-```
-pip uninstall joblib
-git clone https://github.com/joblib/joblib.git`
-cd joblib; python setup.py install
-```
-Installation flow also explained on the [joblib github page](https://github.com/joblib/joblib#installing)
-
-
 ```python
 from sklearn import svm, datasets
 from sigopt_sklearn.search import SigOptSearchCV
