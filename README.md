@@ -202,7 +202,7 @@ parameters = {
   'beta_1': (0.8, 0.999),
   'momentum': (0.001, 1.0),
   'beta_2': (0.8, 0.999),
-  'epsilon': (0.0001, 0.00000001),
+  'epsilon': (0.00000001, 0.0001),
   'hidden_layer_sizes': {
     'shallow': (100,),
     'medium': (10, 10),
