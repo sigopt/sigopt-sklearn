@@ -14,7 +14,7 @@ from test_util import random_assignments
 
 GradientBoostingClassifier_PARAM_DOMAIN = {
   'n_estimators': (20, 500),
-  'min_samples_split': (1, 4),
+  'min_samples_split': (2, 5),
   'min_samples_leaf': (1, 3),
   'learning_rate': (0.01, 1.0)
 }
@@ -33,8 +33,8 @@ GradientBoostingClassifier_EXPERIMENT_DEF = {
       'type': 'int',
       'name': 'min_samples_split',
       'bounds': {
-        'min': 1,
-        'max': 4,
+        'min': 2,
+        'max': 5,
       },
     },
     {
