@@ -33,15 +33,18 @@ class SigOptEnsembleClassifier(ClassifierMixin):
     self.X_file = NamedTemporaryFile()
     self.y_file = NamedTemporaryFile()
     for est_name in ESTIMATOR_NAMES:
-       results_file = NamedTemporaryFile()
-       arg_dict = {'X_file': self.X_file.name, 'y_file': self.y_file.name,
-                   'output_file': results_file.name, 'estimator': est_name}
-       self.estimator_build_args.append(arg_dict)
+      results_file = NamedTemporaryFile()
+      arg_dict = {
+        'X_file': self.X_file.name,
+        'y_file': self.y_file.name,
+        'output_file': results_file.name,
+        'estimator': est_name
+      }
+      self.estimator_build_args.append(arg_dict)
 
   def parallel_fit(self, X, y, client_token=None, est_timeout=None):
     self.n_outputs_ = 1
-    self.classes_ = np.array(np.unique(check_array(y, ensure_2d=False,
-                                                   allow_nd=True, dtype=None)))
+    self.classes_ = np.array(np.unique(check_array(y, ensure_2d=False, allow_nd=True, dtype=None)))
 
     if est_timeout is None:
       est_timeout = int(1e6)
@@ -69,8 +72,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
     return_codes_args = zip(exit_codes, self.estimator_build_args)
 
     # remove estimators that errored or timed out
-    valid_est_args = [rc_args[1] for rc_args in return_codes_args
-                      if rc_args[0] == 0]
+    valid_est_args = [rc_args[1] for rc_args in return_codes_args if rc_args[0] == 0]
 
     # load valid estimators back into memory
     for est_arg in valid_est_args:

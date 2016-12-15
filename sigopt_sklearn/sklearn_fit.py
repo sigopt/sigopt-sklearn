@@ -21,13 +21,13 @@ from sigopt_sklearn.search import SigOptSearchCV
 
 
 ESTIMATOR_NAMES = [
-    "SVMClassifier",
-    "GaussianNBClassifier",
-    "RandomForestClassifier",
-    "SGDClassifier",
-    "XGBClassifier",
-    "KNNClassifier",
-    "LDAClassifier",
+  "SVMClassifier",
+  "GaussianNBClassifier",
+  "RandomForestClassifier",
+  "SGDClassifier",
+  "XGBClassifier",
+  "KNNClassifier",
+  "LDAClassifier",
 ]
 
 def parse_args():
