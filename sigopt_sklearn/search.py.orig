@@ -18,7 +18,6 @@ from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
 from sklearn.base import is_classifier, clone
 
-
 HANDLES_UNICODE = sys.version_info[0] >= 3
 
 
@@ -176,6 +175,17 @@ class SigOptSearchCV(BaseSearchCV):
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score)
 
+<<<<<<< HEAD
+    def create_experiment(self):
+        """Create the SigOpt experiment. You can use this to automatically create a SigOpt experiment with all of the
+        necessary parameters for a scikit-learn model. The created experiment will also be used when calling `fit`. If
+        you want to re-use an experiment check out the `experiment` keyword argument of `__init__`.
+
+        Returns
+        -------
+        experiment : sigopt.interface.Experiment
+        """
+=======
     def _transform_param_domains(self, param_domains):
         def _transform_param(param_name, param_bounds):
             """Transform a parameter name and its bounds into a form that can be sent to the API layer."""
@@ -228,19 +238,8 @@ class SigOptSearchCV(BaseSearchCV):
         # generate sigopt experiment parameters
         return [_transform_param(name, bounds) for (name, bounds) in param_domains.items()]
 
-    def create_experiment(self, num_folds):
-        """Create the SigOpt experiment. You can use this to automatically create a SigOpt experiment with all of the
-        necessary parameters for a scikit-learn model. The created experiment will also be used when calling `fit`. If
-        you want to re-use an experiment check out the `experiment` keyword argument of `__init__`.
-
-        Parameters
-        ----------
-        num_folds : the number of cross-validation folds to use.
-
-        Returns
-        -------
-        experiment : sigopt.interface.Experiment
-        """
+    def _create_sigopt_exp(self, conn, folds):
+>>>>>>> master
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
         # NOTE(Sam): This is not actually safe. There's no reason to believe that len(est_name) <= 50 in general.
@@ -255,7 +254,7 @@ class SigOptSearchCV(BaseSearchCV):
             name=exp_name,
             parameters=self._transform_param_domains(self.param_domains),
             type='cross_validated',
-            folds=num_folds
+            folds=folds
         )
 
         if self.verbose > 0:
@@ -303,25 +302,31 @@ class SigOptSearchCV(BaseSearchCV):
             raise NotImplementedError('The parameter_iterable argument is not supported.')
 
         # Actual fitting,  performing the search over parameters.
-        # estimator = self.estimator
+        estimator = self.estimator
+        cv = self.cv
         self.scorer_ = check_scoring(self.estimator, scoring=self.scoring)
 
         n_samples = _num_samples(X)
         X, y = indexable(X, y)
-
-        cv = check_cv(self.cv, X, y, classifier=is_classifier(self.estimator))
 
         if y is not None:
             if len(y) != n_samples:
                 raise ValueError('Target variable (y) has a different number of samples (%i) than data (X: %i samples)'
                                  % (len(y), n_samples))
 
+        cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
+
         base_estimator = clone(self.estimator)
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
+<<<<<<< HEAD
         if self.experiment is None:
-            self.experiment = self.create_experiment(len(cv))
+            self.experiment = self.create_experiment()
+=======
+        n_folds = len(cv)
+        self._create_sigopt_exp(self.sigopt_connection, n_folds)
+>>>>>>> master
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
