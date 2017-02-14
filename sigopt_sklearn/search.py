@@ -230,7 +230,6 @@ class SigOptSearchCV(BaseSearchCV):
     def _create_sigopt_exp(self, conn, folds):
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
-        # NOTE(Sam): This is not actually safe. There's no reason to believe that len(est_name) <= 50 in general.
         if len(exp_name) > 50:
             exp_name = est_name
 
@@ -242,7 +241,8 @@ class SigOptSearchCV(BaseSearchCV):
             name=exp_name,
             parameters=self._transform_param_domains(self.param_domains),
             type='cross_validated',
-            folds=folds
+            folds=folds,
+            observation_budget=self.n_iter,
         )
 
         if self.verbose > 0:
