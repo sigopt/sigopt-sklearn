@@ -296,9 +296,7 @@ class SigOptSearchCV(BaseSearchCV):
     def _convert_sigopt_api_to_sklearn_assignments(self, param_dict):
       return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
 
-    # pylint: disable=arguments-differ
     def _fit(self, X, y, groups=None, parameter_iterable=None, **fit_params):
-        # pylint: enable=arguments-differ
         if groups is not None:
             raise NotImplementedError('The groups argument is not supported.')
         if parameter_iterable is not None:
