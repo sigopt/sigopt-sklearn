@@ -1,5 +1,7 @@
 import random
+import warnings
 
+warnings.simplefilter("error", append=True)
 
 def random_assignments(experiment_definition):
   def rand_param(param):

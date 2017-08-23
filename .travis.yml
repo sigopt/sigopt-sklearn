@@ -10,6 +10,7 @@ cache:
 env:
   - SKLEARN_VERSION=0.17
   - SKLEARN_VERSION=0.18
+  - SKLEARN_VERSION=0.19
 
 # Install miniconda
 before_install:

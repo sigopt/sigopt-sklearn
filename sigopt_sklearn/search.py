@@ -15,13 +15,19 @@ from joblib.func_inspect import getfullargspec
 # NOTE(Sam): This can be safely removed once we drop our support for scikit-learn versions less than 0.18.
 try:
     # For scikit-learn >= 0.18
-    from sklearn.model_selection import check_cv
+    from sklearn.model_selection import check_cv as base_check_cv
+    def our_check_cv(cv, X, y, classifier):
+      ret = base_check_cv(cv, y, classifier)
+      return ret.n_splits, list(ret.split(X, y=y))
     from sklearn.model_selection._search import BaseSearchCV
     from sklearn.model_selection._validation import _fit_and_score
 except ImportError:
     # For scikit-learn < 0.18
     from sklearn.grid_search import BaseSearchCV
-    from sklearn.cross_validation import check_cv, _fit_and_score
+    from sklearn.cross_validation import check_cv as base_check_cv, _fit_and_score
+    def our_check_cv(cv, X, y, classifier):
+      ret = base_check_cv(cv, X, y, classifier)
+      return len(ret), list(iter(ret))
 
 from sklearn.metrics.scorer import check_scoring
 from sklearn.utils.validation import _num_samples, indexable
@@ -163,9 +169,9 @@ class SigOptSearchCV(BaseSearchCV):
         self.categorical_mappings_ = {}
 
         self.scorer_ = None
-        self.best_params_ = None
-        self.best_score_ = None
-        self.best_estimator_ = None
+        self.our_best_params_ = None
+        self.our_best_score_ = None
+        self.our_best_estimator_ = None
         self.experiment = None
 
         # Set up sigopt_connection
@@ -292,9 +298,13 @@ class SigOptSearchCV(BaseSearchCV):
     def _convert_sigopt_api_to_sklearn_assignments(self, param_dict):
       return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
 
-    def _fit(self, X, y, parameter_iterable=None):
+    def _fit(self, X, y, groups=None, parameter_iterable=None, **fit_params):
+        if groups is not None:
+            raise NotImplementedError('The groups argument is not supported.')
         if parameter_iterable is not None:
             raise NotImplementedError('The parameter_iterable argument is not supported.')
+        if self.fit_params is not None:
+            fit_params = self.fit_params
 
         # Actual fitting,  performing the search over parameters.
         estimator = self.estimator
@@ -309,13 +319,12 @@ class SigOptSearchCV(BaseSearchCV):
                 raise ValueError('Target variable (y) has a different number of samples (%i) than data (X: %i samples)'
                                  % (len(y), n_samples))
 
-        cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
+        n_folds, cv_iter = our_check_cv(cv, X, y, classifier=is_classifier(estimator))
 
         base_estimator = clone(self.estimator)
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        n_folds = len(cv)
         self._create_sigopt_exp(self.sigopt_connection, n_folds)
 
         # start tracking time to optimize estimator
@@ -334,7 +343,7 @@ class SigOptSearchCV(BaseSearchCV):
             suggestions = []
             jobs = []
             for _ in range(self.n_sug):
-                for train, test in cv:
+                for train, test in cv_iter:
                     suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
                     parameters = self._convert_sigopt_api_to_sklearn_assignments(suggestion.assignments.to_json())
                     suggestions.append(suggestion)
@@ -359,7 +368,7 @@ class SigOptSearchCV(BaseSearchCV):
                     delayed(_fit_and_score)(clone(base_estimator), X, y,
                                             self.scorer_, train, test,
                                             self.verbose, parameters,
-                                            self.fit_params,
+                                            fit_params,
                                             return_parameters=True,
                                             error_score=self.error_score)
                         for parameters, train, test in jobs)
@@ -387,21 +396,34 @@ class SigOptSearchCV(BaseSearchCV):
                 'No valid observations found. '
                 'Make sure opt_timeout and cv_timeout provide sufficient time for observations to be reported.')
 
-        self.best_params_ = self._convert_sigopt_api_to_sklearn_assignments(best_assignments[0].assignments.to_json())
-        self.best_score_ = best_assignments[0].value
+        self.our_best_params_ = self._convert_sigopt_api_to_sklearn_assignments(
+            best_assignments[0].assignments.to_json())
+        self.our_best_score_ = best_assignments[0].value
 
         if self.refit:
             # fit the best estimator using the entire dataset
             # clone first to work around broken estimators
             best_estimator = clone(base_estimator).set_params(**self.best_params_)
             if y is not None:
-                best_estimator.fit(X, y, **self.fit_params)
+                best_estimator.fit(X, y, **fit_params)
             else:
-                best_estimator.fit(X, **self.fit_params)
-            self.best_estimator_ = best_estimator
+                best_estimator.fit(X, **fit_params)
+            self.our_best_estimator_ = best_estimator
         return self
 
-    def fit(self, X, y=None):
+    @property
+    def best_params_(self):
+        return self.our_best_params_
+
+    @property
+    def best_score_(self):
+        return self.our_best_score_
+
+    @property
+    def best_estimator_(self):
+        return self.our_best_estimator_
+
+    def fit(self, X, y=None, groups=None, **fit_params):
         """
         Run fit on the estimator with parameters chosen sequentially by SigOpt.
         Parameters
@@ -413,4 +435,4 @@ class SigOptSearchCV(BaseSearchCV):
             Target relative to X for classification or regression;
             None for unsupervised learning.
         """
-        return self._fit(X, y)
+        return self._fit(X, y=y, groups=groups, **fit_params)

@@ -1,5 +1,6 @@
 from mock import MagicMock, patch
 import pytest
+import warnings
 
 import sklearn.datasets
 from sklearn.ensemble import GradientBoostingClassifier
@@ -11,6 +12,7 @@ from sigopt_sklearn.search import SigOptSearchCV
 
 from test_util import random_assignments
 
+warnings.simplefilter("error", append=True)
 
 GradientBoostingClassifier_PARAM_DOMAIN = {
   'n_estimators': (20, 500),
