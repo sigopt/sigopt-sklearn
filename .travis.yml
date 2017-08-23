@@ -11,6 +11,10 @@ env:
   - SKLEARN_VERSION=0.17
   - SKLEARN_VERSION=0.18
   - SKLEARN_VERSION=0.19
+matrix:
+  exclude:
+    - env: SKLEARN_VERSION=0.19
+      python: "3.4"
 
 # Install miniconda
 before_install:

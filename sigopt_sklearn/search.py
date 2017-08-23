@@ -202,7 +202,7 @@ class SigOptSearchCV(BaseSearchCV):
                     warnings.warn('Parameter bounds should be specified as a tuple in the form (min, max).')
 
             # Check that param bounds is either iterable (range/categoricals) or a dict (categoricals)
-            if not (isinstance(param_bounds, collections.Iterable) or isinstance(param_bounds, dict)):
+            if not isinstance(param_bounds, (collections.Iterable, dict)):
               raise Exception('Parameter bounds must be iterable or dicts! The range {} isn\'t friendly!'
                               .format(param_bounds))
 
@@ -269,15 +269,13 @@ class SigOptSearchCV(BaseSearchCV):
       # pylint: disable=undefined-variable
       if HANDLES_UNICODE:
         return data
-      elif isinstance(data, basestring):
+      if isinstance(data, basestring):
         return str(data)
-      elif isinstance(data, collections.Mapping):
+      if isinstance(data, collections.Mapping):
         return dict(map(self._convert_unicode, data.items()))
-      elif isinstance(data, collections.Iterable):
+      if isinstance(data, collections.Iterable):
         return type(data)(map(self._convert_unicode, data))
-      else:
-        return data
-      # pylint: enable=undefined-variable
+      return data
 
     def _convert_log_params(self, param_dict):
       # searches through names for params and converts params with __log__ names
@@ -298,7 +296,9 @@ class SigOptSearchCV(BaseSearchCV):
     def _convert_sigopt_api_to_sklearn_assignments(self, param_dict):
       return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
 
+    # pylint: disable=arguments-differ
     def _fit(self, X, y, groups=None, parameter_iterable=None, **fit_params):
+        # pylint: enable=arguments-differ
         if groups is not None:
             raise NotImplementedError('The groups argument is not supported.')
         if parameter_iterable is not None:
