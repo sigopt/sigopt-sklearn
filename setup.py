@@ -6,7 +6,7 @@ install_requires = [
   'joblib>=0.9.4',
   'numpy>=1.9',
   'scikit-learn>=0.17.1',
-  'sigopt>=2.1.0',
+  'sigopt>=2.6.0',
 ]
 
 setup(
