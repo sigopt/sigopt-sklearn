@@ -14,6 +14,7 @@ pylint sigopt_sklearn \
   -d abstract-class-not-used \
   -d abstract-method \
   -d anomalous-unicode-escape-in-string \
+  -d arguments-differ \
   -d bad-continuation \
   -d bad-indentation \
   -d bad-whitespace \
