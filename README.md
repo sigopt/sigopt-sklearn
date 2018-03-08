@@ -8,7 +8,7 @@ This package implements useful interfaces and wrappers for using [SigOpt](https:
 Install the sigopt_sklearn python modules with `pip install sigopt_sklearn`.
 
 Sign up for an account at [https://sigopt.com](https://sigopt.com). To use the interfaces, you'll need your API token
-from your [user profile](https://sigopt.com/user/profile).
+from the [API tokens page](https://sigopt.com/tokens).
 
 ### SigOptSearchCV
 
@@ -19,7 +19,7 @@ validation. A short example that tunes the parameters of an SVM on a small datas
 from sklearn import svm, datasets
 from sigopt_sklearn.search import SigOptSearchCV
 
-# find your SigOpt client token here : https://sigopt.com/user/profile
+# find your SigOpt client token here : https://sigopt.com/tokens
 client_token = '<YOUR_SIGOPT_CLIENT_TOKEN>'
 
 iris = datasets.load_iris()
@@ -69,7 +69,7 @@ from xgboost.sklearn import XGBClassifier
 from sklearn import datasets
 from sigopt_sklearn.search import SigOptSearchCV
 
-# find your SigOpt client token here : https://sigopt.com/user/profile
+# find your SigOpt client token here : https://sigopt.com/tokens
 client_token = '<YOUR_SIGOPT_CLIENT_TOKEN>'
 iris = datasets.load_iris()
 
@@ -134,7 +134,7 @@ X_test = load_datafile('test/X_test.txt')
 y_test = load_datafile('test/y_test.txt').ravel()
 
 # fit and tune several classification models concurrently
-# find your SigOpt client token here : https://sigopt.com/user/profile
+# find your SigOpt client token here : https://sigopt.com/tokens
 sigopt_clf = SigOptEnsembleClassifier()
 sigopt_clf.parallel_fit(X_train, y_train, est_timeout=(40 * 60),
     client_token='<YOUR_CLIENT_TOKEN>')
@@ -158,7 +158,7 @@ too slow.
 from sklearn import svm, datasets
 from sigopt_sklearn.search import SigOptSearchCV
 
-# find your SigOpt client token here : https://sigopt.com/user/profile
+# find your SigOpt client token here : https://sigopt.com/tokens
 client_token = '<YOUR_SIGOPT_CLIENT_TOKEN>'
 dataset = datasets.fetch_20newsgroups_vectorized()
 X = dataset.data

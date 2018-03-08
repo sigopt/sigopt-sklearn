@@ -68,7 +68,7 @@ class SigOptSearchCV(BaseSearchCV):
         Number of suggestions to retrieve from SigOpt for evaluation in parallel
     client_token : string, optional
         SigOpt API client token, find yours here:
-        https://sigopt.com/user/profile. This field is required except when the
+        https://sigopt.com/tokens. This field is required except when the
         ``sigopt_connection`` argument is present or when the
         ``SIGOPT_API_TOKEN`` environment variable is set. We recommend using
         this instead of ``sigopt_connection``.
@@ -180,7 +180,7 @@ class SigOptSearchCV(BaseSearchCV):
             raise ValueError(
                 'Please set the `SIGOPT_API_TOKEN` environment variable, pass the ``client_token`` parameter, or pass '
                 'the ``sigopt_connection`` parameter. You can find your client token here: '
-                'https://sigopt.com/user/profile.')
+                'https://sigopt.com/tokens.')
         else:
             self.sigopt_connection = (sigopt_connection if sigopt_connection
                     else sigopt.Connection(client_token=found_token))
