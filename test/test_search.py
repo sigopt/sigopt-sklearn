@@ -167,7 +167,7 @@ class TestSearch(object):
   @patch('sigopt.Connection', new=mock_connection(SVC_EXPERIMENT_DEF))
   def test_non_string_categorical(self):
     data = sklearn.datasets.load_iris()
-    clf = SigOptSearchCV(SVC(), SVC_PARAM_DOMAIN, client_token='client_token', n_iter=5)
+    clf = SigOptSearchCV(SVC(gamma='auto'), SVC_PARAM_DOMAIN, client_token='client_token', n_iter=5, cv=3)
     clf.fit(data['data'], data['target'])
 
   def test_bad_param_range1(self):

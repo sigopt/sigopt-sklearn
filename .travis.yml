@@ -4,6 +4,8 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
+  - "3.6"
+  - "3.7"
 cache:
   pip: true
 
@@ -11,10 +13,7 @@ env:
   - SKLEARN_VERSION=0.17
   - SKLEARN_VERSION=0.18
   - SKLEARN_VERSION=0.19
-matrix:
-  exclude:
-    - env: SKLEARN_VERSION=0.19
-      python: "3.4"
+  - SKLEARN_VERSION=0.20
 
 # Install miniconda
 before_install:
