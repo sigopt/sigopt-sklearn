@@ -1,5 +1,5 @@
 # SigOpt + scikit-learn Interfacing
-[![Build Status](https://travis-ci.org/sigopt/sigopt_sklearn.svg?branch=master)](https://travis-ci.org/sigopt/sigopt_sklearn)
+[![Build Status](https://travis-ci.org/sigopt/sigopt-sklearn.svg?branch=master)](https://travis-ci.org/sigopt/sigopt_sklearn)
 
 This package implements useful interfaces and wrappers for using [SigOpt](https://sigopt.com) and [scikit-learn](http://scikit-learn.org/stable/) together
 
