@@ -17,7 +17,7 @@ env:
 
 install:
   - pip install --only-binary=numpy,scipy -r requirements.txt
-  - pip install scikit-learn=$SKLEARN_VERSION
+  - pip install scikit-learn==$SKLEARN_VERSION
   - pip install pytest mock pylint
   - python setup.py clean --all
   - pip install -e .[ensemble]
