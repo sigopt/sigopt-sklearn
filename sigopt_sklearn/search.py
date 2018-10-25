@@ -267,8 +267,10 @@ class SigOptSearchCV(BaseSearchCV):
     def _convert_unicode(self, data):
       if HANDLES_UNICODE:
         return data
+      # pylint: disable=undefined-variable
       if isinstance(data, basestring):
         return str(data)
+      # pylint: enable=undefined-variable
       if isinstance(data, collections.Mapping):
         return dict(map(self._convert_unicode, data.items()))
       if isinstance(data, collections.Iterable):
