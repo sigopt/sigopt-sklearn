@@ -12,7 +12,6 @@ import sigopt
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
 
-# NOTE(Sam): This can be safely removed once we drop our support for scikit-learn versions less than 0.18.
 try:
     # For scikit-learn >= 0.18
     from sklearn.model_selection import check_cv as base_check_cv
@@ -266,11 +265,12 @@ class SigOptSearchCV(BaseSearchCV):
 
     # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
-      # pylint: disable=undefined-variable
       if HANDLES_UNICODE:
         return data
+      # pylint: disable=undefined-variable
       if isinstance(data, basestring):
         return str(data)
+      # pylint: enable=undefined-variable
       if isinstance(data, collections.Mapping):
         return dict(map(self._convert_unicode, data.items()))
       if isinstance(data, collections.Iterable):
@@ -294,7 +294,16 @@ class SigOptSearchCV(BaseSearchCV):
                 for (name, val) in param_dict.items()}
 
     def _convert_sigopt_api_to_sklearn_assignments(self, param_dict):
-      return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
+        return self._convert_nonstring_categoricals(self._convert_log_params(self._convert_unicode(param_dict)))
+
+    # pylint: disable=unused-argument
+    def _run_search(self, evaluate_candidates):
+        # NOTE(patrick): scikit-learn 0.20.0 checks for the existence of this method, since
+        # the default implementation of `_fit` calls it. However, to maintain compatibility
+        # with older versions, we completely override _fit, so this method is unused. But
+        # we make sure it exists, so that the class can be instantiated
+        raise NotImplementedError('_run_search not used in this implementation')
+    # pylint: enable=unused-argument
 
     def _fit(self, X, y, groups=None, parameter_iterable=None, **fit_params):
         if groups is not None:

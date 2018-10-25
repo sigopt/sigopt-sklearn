@@ -3,36 +3,23 @@ language: python
 python:
   - "2.7"
   - "3.4"
-  - "3.5"
+  # - "3.5"  # Has weird numpy binary incompatibility errors
+  - "3.6"
+  # - "3.7"  # Not yet supported on travis
 cache:
   pip: true
 
 env:
-  - SKLEARN_VERSION=0.17
-  - SKLEARN_VERSION=0.18
-  - SKLEARN_VERSION=0.19
-matrix:
-  exclude:
-    - env: SKLEARN_VERSION=0.19
-      python: "3.4"
-
-# Install miniconda
-before_install:
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda2-3.19.0-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.19.0-Linux-x86_64.sh -O miniconda.sh; fi
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p /home/travis/miniconda
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - SKLEARN_VERSION=0.17.1
+  - SKLEARN_VERSION=0.18.2
+  - SKLEARN_VERSION=0.19.2
+  - SKLEARN_VERSION=0.20.0
 
 install:
-  # Preinstall numpy and scikit-learn with conda in order to speed up build process. Versions should match the
-  # corresponding `requirements.txt` and `setup.py` versions. A compatible version of scipy is gathered as a
-  # prerequisite of sciki-learn.
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION scikit-learn=$SKLEARN_VERSION 'numpy>=1.9'
-
+  - pip install --only-binary=numpy,scipy -r requirements.txt
+  - pip install scikit-learn==$SKLEARN_VERSION
   - pip install pytest mock pylint
-  - pip install -r requirements.txt
   - python setup.py clean --all
-  # - python setup.py install
   - pip install -e .[ensemble]
 script:
   - PYTHONPATH=. python -m pytest -rw -v test

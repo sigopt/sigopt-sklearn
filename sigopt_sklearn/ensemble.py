@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.utils.validation import check_array
 
-import sigopt_sklearn.sklearn_fit as sklearn_fit
+import sigopt_sklearn.sklearn_fit
 from sigopt_sklearn.sklearn_fit import ESTIMATOR_NAMES
 
 
@@ -58,7 +58,7 @@ class SigOptEnsembleClassifier(ClassifierMixin):
       # these processes are wrapped in timeout command to capture case
       # where a single observation never completes
       sigopt_procs.append(Popen([
-        "timeout", str(est_timeout + 10), "python", sklearn_fit.__file__,
+        "timeout", str(est_timeout + 10), "python", sigopt_sklearn.sklearn_fit.__file__,
         "--opt_timeout", str(est_timeout),
         "--estimator", build_args['estimator'],
         "--X_file", build_args['X_file'], "--y_file", build_args['y_file'],
