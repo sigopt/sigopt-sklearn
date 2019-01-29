@@ -159,8 +159,8 @@ class TestSearch(object):
     for p in GradientBoostingClassifier_EXPERIMENT_DEF['parameters']:
       assert p in create_definition['parameters']
     assert len(conn.experiments().best_assignments().fetch.mock_calls) == 1
-    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter * folds
-    assert len(conn.experiments().observations().create.mock_calls) == n_iter * folds
+    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter 
+    assert len(conn.experiments().observations().create.mock_calls) == n_iter
 
     assert cv.best_params_ == zero_corner(GradientBoostingClassifier_EXPERIMENT_DEF)
 
