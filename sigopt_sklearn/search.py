@@ -355,7 +355,7 @@ class SigOptSearchCV(BaseSearchCV):
                 parameter_configs.append(parameters)
 
             if self.verbose > 0:
-                print('Evaluating params : ', paramter_configs)
+                print('Evaluating params : ', parameter_configs)
 
 
             # do CV folds in parallel using joblib
