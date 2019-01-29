@@ -9,6 +9,7 @@ import warnings
 
 import collections
 import sigopt
+import numpy
 from joblib import Parallel, delayed
 from joblib.func_inspect import getfullargspec
 
@@ -241,7 +242,7 @@ class SigOptSearchCV(BaseSearchCV):
         # generate sigopt experiment parameters
         return [_transform_param(name, bounds) for (name, bounds) in param_domains.items()]
 
-    def _create_sigopt_exp(self, conn, folds):
+    def _create_sigopt_exp(self, conn):
         est_name = self.estimator.__class__.__name__
         exp_name = est_name + ' (sklearn)'
         if len(exp_name) > 50:
@@ -254,8 +255,6 @@ class SigOptSearchCV(BaseSearchCV):
         self.experiment = conn.experiments().create(
             name=exp_name,
             parameters=self._transform_param_domains(self.param_domains),
-            type='cross_validated',
-            folds=folds,
             observation_budget=self.n_iter,
         )
 
@@ -332,7 +331,7 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp(self.sigopt_connection, n_folds)
+        self._create_sigopt_exp(self.sigopt_connection)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
@@ -348,16 +347,15 @@ class SigOptSearchCV(BaseSearchCV):
                 break
 
             suggestions = []
-            jobs = []
+            parameter_configs = []
             for _ in range(self.n_sug):
-                for train, test in cv_iter:
-                    suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
-                    parameters = self._convert_sigopt_api_to_sklearn_assignments(suggestion.assignments.to_json())
-                    suggestions.append(suggestion)
-                    jobs.append([parameters, train, test])
+                suggestion = self.sigopt_connection.experiments(self.experiment.id).suggestions().create()
+                parameters = self._convert_sigopt_api_to_sklearn_assignments(suggestion.assignments.to_json())
+                suggestions.append(suggestion)
+                parameter_configs.append(parameters)
 
             if self.verbose > 0:
-                print('Evaluating params : ', [job[0] for job in jobs])
+                print('Evaluating params : ', paramter_configs)
 
 
             # do CV folds in parallel using joblib
@@ -378,17 +376,21 @@ class SigOptSearchCV(BaseSearchCV):
                                             fit_params,
                                             return_parameters=True,
                                             error_score=self.error_score)
-                        for parameters, train, test in jobs)
+                        for parameters in parameter_configs
+                        for train, test in cv_iter)
             except TimeoutError:
                  obs_timed_out = True
 
             if not obs_timed_out:
                 # grab scores from results
                 for sidx, suggestion in enumerate(suggestions):
-                    score = out[sidx][0]
+                    out_idx = sidx * n_folds
+                    scores = [o[0] for o in out[out_idx:out_idx+n_folds]]
                     self.sigopt_connection.experiments(self.experiment.id).observations().create(
                         suggestion=suggestion.id,
-                        value=score)
+                        value=numpy.mean(scores),
+                        value_stddev=numpy.std(scores)
+                    )
             else:
                 # obsevation timed out so report a failure
                 self.sigopt_connection.experiments(self.experiment.id).observations().create(
