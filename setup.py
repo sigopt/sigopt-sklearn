@@ -5,7 +5,7 @@ from sigopt_sklearn.version import VERSION
 install_requires = [
   'joblib>=0.9.4',
   'numpy>=1.9',
-  'scikit-learn>=0.17.1',
+  'scikit-learn>=0.19',
   'sigopt>=2.6.0',
 ]
 
@@ -19,7 +19,7 @@ setup(
   packages=['sigopt_sklearn'],
   install_requires=install_requires,
   extras_require={
-    'ensemble': ['xgboost>=0.4a30'],
+    'ensemble': ['xgboost>=0.4a30,<0.90'],
   },
   classifiers=[
     "Development Status :: 3 - Alpha",

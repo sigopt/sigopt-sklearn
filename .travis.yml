@@ -10,8 +10,6 @@ cache:
   pip: true
 
 env:
-  - SKLEARN_VERSION=0.17.1
-  - SKLEARN_VERSION=0.18.2
   - SKLEARN_VERSION=0.19.2
   - SKLEARN_VERSION=0.20.0
 
