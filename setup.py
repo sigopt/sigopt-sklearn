@@ -19,7 +19,7 @@ setup(
   packages=['sigopt_sklearn'],
   install_requires=install_requires,
   extras_require={
-    'ensemble': ['xgboost>=0.4a30'],
+    'ensemble': ['xgboost>=0.4a30,<0.90'],
   },
   classifiers=[
     "Development Status :: 3 - Alpha",
