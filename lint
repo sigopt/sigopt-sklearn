@@ -28,6 +28,7 @@ pylint sigopt_sklearn \
   -d locally-disabled \
   -d locally-enabled \
   -d missing-docstring \
+  -d no-else-raise \
   -d no-init \
   -d no-self-use \
   -d no-value-for-parameter \
