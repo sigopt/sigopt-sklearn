@@ -124,7 +124,7 @@ def load_datafile(filename):
   X = []
   with open(filename, 'r') as f:
     for l in f:
-      X.append(np.array(list(map(float, l.split()))))
+      X.append(numpy.array([float(v) for v in l.split()]))
   X = np.vstack(X)
   return X
 
