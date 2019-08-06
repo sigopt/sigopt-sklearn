@@ -9,6 +9,9 @@ python:
 cache:
   pip: true
 
+os:
+  - linux
+  - osx
 env:
   - SKLEARN_VERSION=0.19.2
   - SKLEARN_VERSION=0.20.0
