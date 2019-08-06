@@ -7,6 +7,7 @@ except ImportError:
 
 from subprocess import Popen
 from tempfile import NamedTemporaryFile
+from threading import Timer
 
 import numpy as np
 from sklearn.base import ClassifierMixin
@@ -52,20 +53,28 @@ class SigOptEnsembleClassifier(ClassifierMixin):
     with open(self.y_file.name, 'wb') as outfile:
       pickle.dump(y, outfile, pickle.HIGHEST_PROTOCOL)
 
+    def timeout_wrapper(proc, timeout):
+      timer = Timer(timeout, proc.kill)
+      try:
+        timer.start()
+        return proc.wait()
+      finally:
+        timer.cancel()
+
     sigopt_procs = []
     for build_args in self.estimator_build_args:
       # run separaete python process for each estimator with timeout
       # these processes are wrapped in timeout command to capture case
       # where a single observation never completes
       sigopt_procs.append(Popen([
-        "timeout", str(est_timeout + 10), "python", sigopt_sklearn.sklearn_fit.__file__,
+        "python", sigopt_sklearn.sklearn_fit.__file__,
         "--opt_timeout", str(est_timeout),
         "--estimator", build_args['estimator'],
         "--X_file", build_args['X_file'], "--y_file", build_args['y_file'],
         "--client_token", client_token,
         "--output_file", build_args['output_file']
       ]))
-    exit_codes = [p.wait() for p in sigopt_procs]
+    exit_codes = [timeout_wrapper(p, est_timeout + 10) for p in sigopt_procs]
     return_codes_args = zip(exit_codes, self.estimator_build_args)
 
     # remove estimators that errored or timed out
