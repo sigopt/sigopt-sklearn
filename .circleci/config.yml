@@ -4,16 +4,16 @@ commands:
   test:
     steps:
       - checkout
-      - run: pip install --only-binary=numpy,scipy -r requirements.txt
-      - run: pip install scikit-learn==0.19.2
-      - run: pip install pytest mock pylint
-      - run: python setup.py clean --all
-      - run: pip install -e .[ensemble]
-      - run: python -m pytest -rw -v test
+      - run: sudo pip install --only-binary=numpy,scipy -r requirements.txt
+      - run: sudo pip install scikit-learn==0.19.2
+      - run: sudo pip install pytest mock pylint
+      - run: sudo python setup.py clean --all
+      - run: sudo pip install -e .[ensemble]
+      - run: sudo python -m pytest -rw -v test
   lint:
     steps:
-      - run: pip install pylint==2.3.1
-      - run: ./lint
+      - run: sudo pip install pylint==2.3.1
+      - run: sudo ./lint
 
 
 jobs:
