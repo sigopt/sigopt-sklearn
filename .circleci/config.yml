@@ -9,7 +9,7 @@ commands:
       - run: sudo pip install pytest mock pylint
       - run: sudo python setup.py clean --all
       - run: sudo pip install -e .[ensemble]
-      - run: echo sudo python -c "import sklearn; print('sklearn:', sklearn.__version__)"
+      - run: echo $(sudo python -c "import sklearn; print('sklearn:', sklearn.__version__)")
       - run: sudo python -m pytest -rw -v test
   lint:
     steps:
