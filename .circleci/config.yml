@@ -18,7 +18,7 @@ commands:
 
 
 jobs:
-  test-py37:
+  test-py37-sklearn0.19.2:
     docker:
       - image: circleci/python:3.7
     environment:
@@ -26,40 +26,81 @@ jobs:
     steps:
       - test
       - lint
-  test-py36:
+  test-py36-sklearn0.19.2:
     docker:
       - image: circleci/python:3.6
     environment:
       SKLEARN_VERSION: 0.19.2
     steps:
       - test
-  test-py35:
+  test-py35-sklearn0.19.2:
     docker:
       - image: circleci/python:3.5
     environment:
       SKLEARN_VERSION: 0.19.2
     steps:
       - test
-  test-py34:
+  test-py34-sklearn0.19.2:
     docker:
       - image: circleci/python:3.4
     environment:
       SKLEARN_VERSION: 0.19.2
     steps:
       - test
-  test-py27:
+  test-py27-sklearn0.19.2:
     docker:
       - image: circleci/python:2.7
     environment:
       SKLEARN_VERSION: 0.19.2
     steps:
       - test
+  test-py37-sklearn0.20.0:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+      - lint
+  test-py36-sklearn0.20.0:
+    docker:
+      - image: circleci/python:3.6
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py35-sklearn0.20.0:
+    docker:
+      - image: circleci/python:3.5
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py34-sklearn0.20.0:
+    docker:
+      - image: circleci/python:3.4
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py27-sklearn0.20.0:
+    docker:
+      - image: circleci/python:2.7
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
 
 workflows:
   main:
     jobs:
-      - test-py27
-      - test-py34
-      - test-py35
-      - test-py36
-      - test-py37
+      - test-py27-sklearn0.19.2
+      - test-py34-sklearn0.19.2
+      - test-py35-sklearn0.19.2
+      - test-py36-sklearn0.19.2
+      - test-py37-sklearn0.19.2
+      - test-py27-sklearn0.20.0
+      - test-py34-sklearn0.20.0
+      - test-py35-sklearn0.20.0
+      - test-py36-sklearn0.20.0
+      - test-py37-sklearn0.20.0
