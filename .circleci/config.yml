@@ -1,0 +1,121 @@
+version: 2.1
+
+commands:
+  test:
+    steps:
+      - checkout
+      - run: sudo pip install --only-binary=numpy,scipy -r requirements.txt
+      - run: sudo pip install scikit-learn==${SKLEARN_VERSION}
+      - run: sudo pip install pytest mock pylint
+      - run: python setup.py clean --all
+      - run: sudo pip install -e .[ensemble]
+      - run: echo $(python -c "import sklearn; print('sklearn:', sklearn.__version__)")
+      - run: python -m pytest -rw -v test
+  lint:
+    steps:
+      - run: sudo pip install pylint==2.3.1
+      - run: ./lint
+
+
+jobs:
+  test-py37-sklearn_0_19_2:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      SKLEARN_VERSION: 0.19.2
+    steps:
+      - test
+      - lint
+  test-py36-sklearn_0_19_2:
+    docker:
+      - image: circleci/python:3.6
+    environment:
+      SKLEARN_VERSION: 0.19.2
+    steps:
+      - test
+  test-py35-sklearn_0_19_2:
+    docker:
+      - image: circleci/python:3.5
+    environment:
+      SKLEARN_VERSION: 0.19.2
+    steps:
+      - test
+  test-py34-sklearn_0_19_2:
+    docker:
+      - image: circleci/python:3.4
+    environment:
+      SKLEARN_VERSION: 0.19.2
+    steps:
+      - test
+  test-py27-sklearn_0_19_2:
+    docker:
+      - image: circleci/python:2.7
+    environment:
+      SKLEARN_VERSION: 0.19.2
+    steps:
+      - test
+  test-py37-sklearn_0_20_0:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py36-sklearn_0_20_0:
+    docker:
+      - image: circleci/python:3.6
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py35-sklearn_0_20_0:
+    docker:
+      - image: circleci/python:3.5
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py34-sklearn_0_20_0:
+    docker:
+      - image: circleci/python:3.4
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-py27-sklearn_0_20_0:
+    docker:
+      - image: circleci/python:2.7
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+  test-macos-sklearn_0_19_2:
+    macos:
+      xcode: "10.0.0"
+    environment:
+      SKLEARN_VERSION: 0.19.2
+    steps:
+      - test
+  test-macos-sklearn_0_20_0:
+    macos:
+      xcode: "10.0.0"
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
+
+workflows:
+  main:
+    jobs:
+      - test-py27-sklearn_0_19_2
+      - test-py34-sklearn_0_19_2
+      - test-py35-sklearn_0_19_2
+      - test-py36-sklearn_0_19_2
+      - test-py37-sklearn_0_19_2
+      - test-py27-sklearn_0_20_0
+      - test-py34-sklearn_0_20_0
+      - test-py35-sklearn_0_20_0
+      - test-py36-sklearn_0_20_0
+      - test-py37-sklearn_0_20_0
+      - test-macos-sklearn_0_19_2
+      - test-macos-sklearn_0_20_0
