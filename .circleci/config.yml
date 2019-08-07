@@ -19,8 +19,6 @@ commands:
 
 jobs:
   test-py37-sklearn_0_19_2:
-    macos:
-      xcode: "10.0.0"
     docker:
       - image: circleci/python:3.7
     environment:
@@ -92,6 +90,13 @@ jobs:
       SKLEARN_VERSION: 0.20.0
     steps:
       - test
+  test-macos-sklearn_0_20_0:
+    macos:
+      xcode: "10.0.0"
+    environment:
+      SKLEARN_VERSION: 0.20.0
+    steps:
+      - test
 
 workflows:
   main:
@@ -106,3 +111,4 @@ workflows:
       - test-py35-sklearn_0_20_0
       - test-py36-sklearn_0_20_0
       - test-py37-sklearn_0_20_0
+      - test-macos-sklearn_0_20_0
