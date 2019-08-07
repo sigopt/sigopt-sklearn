@@ -19,6 +19,8 @@ commands:
 
 jobs:
   test-py37-sklearn_0_19_2:
+    macos:
+      xcode: "10.0.0"
     docker:
       - image: circleci/python:3.7
     environment:
