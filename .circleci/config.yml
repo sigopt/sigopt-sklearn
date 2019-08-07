@@ -7,14 +7,14 @@ commands:
       - run: sudo pip install --only-binary=numpy,scipy -r requirements.txt
       - run: sudo pip install scikit-learn==${SKLEARN_VERSION}
       - run: sudo pip install pytest mock pylint
-      - run: sudo python setup.py clean --all
+      - run: python setup.py clean --all
       - run: sudo pip install -e .[ensemble]
-      - run: echo $(sudo python -c "import sklearn; print('sklearn:', sklearn.__version__)")
-      - run: sudo python -m pytest -rw -v test
+      - run: echo $(python -c "import sklearn; print('sklearn:', sklearn.__version__)")
+      - run: python -m pytest -rw -v test
   lint:
     steps:
       - run: sudo pip install pylint==2.3.1
-      - run: sudo ./lint
+      - run: ./lint
 
 
 jobs:
@@ -61,7 +61,6 @@ jobs:
       SKLEARN_VERSION: 0.20.0
     steps:
       - test
-      - lint
   test-py36-sklearn_0_20_0:
     docker:
       - image: circleci/python:3.6
