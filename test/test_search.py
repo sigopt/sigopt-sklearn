@@ -7,6 +7,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
 
 import sigopt
+import sigopt.objects
 
 from sigopt_sklearn.search import SigOptSearchCV
 
@@ -159,10 +160,30 @@ class TestSearch(object):
     for p in GradientBoostingClassifier_EXPERIMENT_DEF['parameters']:
       assert p in create_definition['parameters']
     assert len(conn.experiments().best_assignments().fetch.mock_calls) == 1
-    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter 
+    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter
     assert len(conn.experiments().observations().create.mock_calls) == n_iter
 
     assert cv.best_params_ == zero_corner(GradientBoostingClassifier_EXPERIMENT_DEF)
+
+  @patch('sigopt.Connection', new=mock_connection(GradientBoostingClassifier_EXPERIMENT_DEF))
+  def test_provide_experiment(self):
+    conn = sigopt.Connection()
+    n_iter = 5
+    folds = 3
+    experiment = sigopt.objects.Experiment({'id': '1'})
+    cv = SigOptSearchCV(
+      estimator=GradientBoostingClassifier(),
+      param_domains=GradientBoostingClassifier_PARAM_DOMAIN,
+      client_token='client_token',
+      n_iter=n_iter,
+      cv=folds,
+      experiment=experiment,
+    )
+    data = sklearn.datasets.load_iris()
+    cv.fit(data['data'], data['target'])
+    assert len(conn.experiments().create.mock_calls) == 0
+    assert len(conn.experiments().suggestions().create.mock_calls) == n_iter
+    assert len(conn.experiments().observations().create.mock_calls) == n_iter
 
   @patch('sigopt.Connection', new=mock_connection(SVC_EXPERIMENT_DEF))
   def test_non_string_categorical(self):

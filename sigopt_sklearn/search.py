@@ -156,7 +156,7 @@ class SigOptSearchCV(BaseSearchCV):
                  fit_params=None, n_jobs=1, iid=True, refit=True, cv=None,
                  verbose=0, n_sug=1, pre_dispatch='2*n_jobs',
                  error_score='raise', cv_timeout=None, opt_timeout=None,
-                 client_token=None, sigopt_connection=None):
+                 client_token=None, sigopt_connection=None, experiment=None):
         self.param_domains = param_domains
         self.n_iter = n_iter
         self.n_sug = n_sug
@@ -172,7 +172,7 @@ class SigOptSearchCV(BaseSearchCV):
         self.our_best_params_ = None
         self.our_best_score_ = None
         self.our_best_estimator_ = None
-        self.experiment = None
+        self.experiment = experiment
 
         # Set up sigopt_connection
         found_token = client_token or os.environ.get('SIGOPT_API_TOKEN')
@@ -252,7 +252,7 @@ class SigOptSearchCV(BaseSearchCV):
             print('Creating SigOpt experiment: ', exp_name)
 
         # create sigopt experiment
-        self.experiment = conn.experiments().create(
+        experiment = conn.experiments().create(
             name=exp_name,
             parameters=self._transform_param_domains(self.param_domains),
             observation_budget=self.n_iter,
@@ -261,6 +261,8 @@ class SigOptSearchCV(BaseSearchCV):
         if self.verbose > 0:
             exp_url = 'https://sigopt.com/experiment/{0}'.format(self.experiment.id)
             print('Experiment progress available at :', exp_url)
+
+        return experiment
 
     # NOTE(patrick): SVM can't handle unicode, so we need to convert those to string.
     def _convert_unicode(self, data):
@@ -331,7 +333,8 @@ class SigOptSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         # setup SigOpt experiment and run optimization
-        self._create_sigopt_exp(self.sigopt_connection)
+        if not self.experiment:
+            self.experiment = self._create_sigopt_exp(self.sigopt_connection)
 
         # start tracking time to optimize estimator
         opt_start_time = time.time()
