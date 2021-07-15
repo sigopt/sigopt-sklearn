@@ -1,6 +1,6 @@
 # Also update `install_requires` in `setup.py` and the conda install process in `.travis.yml`!
 
-joblib>=0.9.4
+joblib==0.14.1
 numpy>=1.9
 scikit-learn>=0.17.1
 sigopt>=2.6.0
