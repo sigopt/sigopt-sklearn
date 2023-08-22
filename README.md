@@ -215,3 +215,7 @@ clf = SigOptSearchCV(nn, parameters, cv=5, cv_timeout=240,
 
 clf.fit(X, y)
 ```
+
+General Information
+=========
+repository: 2016-2023
