@@ -3,7 +3,7 @@ from sigopt_sklearn.version import VERSION
 
 # Keep this in sync with `requirements.txt` and the conda install process in `.travis.yml`!
 install_requires = [
-  'joblib>=0.9.4',
+  'joblib==0.14.1',
   'numpy>=1.9',
   'scikit-learn>=0.19,<0.21',
   'sigopt>=2.6.0',
